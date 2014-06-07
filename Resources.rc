@@ -1,0 +1,253 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU1 MENU
+BEGIN
+    MENUITEM "&Login",                      ID_LOGIN
+    MENUITEM "&Utilizadores",               ID_UTILIZADORES
+    POPUP "Mensagem Pública"
+    BEGIN
+        MENUITEM "Enviar",                      ID_ENVIA
+        MENUITEM "Ler",                         ID_LE
+    END
+    POPUP "Gerir"
+    BEGIN
+        MENUITEM "Criar Novo Utilizador",       ID_GERIR_CRIARNOVOUTILIZADOR
+        MENUITEM SEPARATOR
+        MENUITEM "Desligar Server",             ID_GERIR_DESLIGARSERVER
+    END
+    MENUITEM "&Acerca...",                  ID_ACERCA
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_ACCELERATOR1 ACCELERATORS
+BEGIN
+    "X",            ID_UTILIZADORES,        VIRTKEY, CONTROL, NOINVERT
+    VK_F1,          ID_LOGIN,               VIRTKEY, CONTROL, NOINVERT
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Portuguese (Portugal) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_PTG)
+LANGUAGE LANG_PORTUGUESE, SUBLANG_PORTUGUESE
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_DIALOG2, DIALOG
+    BEGIN
+        LEFTMARGIN, 5
+        RIGHTMARGIN, 170
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 100
+    END
+
+    IDD_DIALOG3, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 254
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 127
+    END
+
+    IDD_DIALOG4, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 302
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 24
+    END
+
+    IDD_DIALOG5, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 231
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 15
+    END
+
+    IDD_DIALOG1, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 142
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+
+    IDD_DIALOG7, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 276
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DIALOG2 DIALOGEX 0, 0, 173, 106
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Autenticar"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,28,76,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,98,77,50,14
+    EDITTEXT        IDC_EDIT1,14,31,116,12,ES_AUTOHSCROLL
+    LTEXT           "Login",IDC_STATIC,14,22,18,8
+    LTEXT           "Password",IDC_STATIC,14,49,32,8
+    EDITTEXT        IDC_EDIT2,14,57,117,12,ES_PASSWORD | ES_AUTOHSCROLL
+    ICON            IDI_ICON2,IDC_STATIC,139,14,21,20
+END
+
+IDD_DIALOG3 DIALOGEX 0, 0, 261, 134
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Online"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LISTBOX         IDC_LIST1,33,26,205,101,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    ICON            IDI_ICON1,IDC_STATIC,7,7,20,20
+    LTEXT           "Duplo clique num Utilizador para iniciar uma conversa privada",IDC_STATIC,38,14,194,8
+END
+
+IDD_DIALOG4 DIALOGEX 0, 0, 309, 31
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Enviar Mensagem Pública"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,252,7,50,14
+    EDITTEXT        IDC_ENVIADA,7,7,236,14,ES_AUTOHSCROLL
+END
+
+IDD_DIALOG5 DIALOGEX 0, 0, 238, 22
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Ler Última Mensagem Pública"
+FONT 10, "Microsoft Sans Serif", 400, 0, 0x0
+BEGIN
+    LTEXT           "Static",IDC_LIDA,7,7,224,8
+END
+
+IDD_DIALOG1 DIALOGEX 0, 0, 149, 95
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Acerca..."
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,50,67,50,14
+    LTEXT           "Trabalho Prático de SO2 13/14",IDC_STATIC,36,21,99,8
+    LTEXT           "Jorge Góis - 21200696",IDC_STATIC,38,41,73,8
+    LTEXT           "Victor Soares - 21220721",IDC_STATIC,34,50,82,8
+    ICON            IDI_ICON1,IDC_STATIC,14,14,20,20
+END
+
+IDD_DIALOG7 DIALOGEX 0, 0, 283, 95
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Criar Novo Utilizador"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,14,66,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,79,66,50,14
+    LTEXT           "Login",IDC_STATIC,29,29,18,8
+    LTEXT           "Password",IDC_STATIC,15,44,32,8
+    EDITTEXT        IDC_EDIT1,51,26,77,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT2,51,42,77,14,ES_AUTOHSCROLL
+    GROUPBOX        "Lista de utilizadores",IDC_STATIC,139,7,136,81
+    LISTBOX         IDC_LIST1,153,18,108,62,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    ICON            IDI_ICON3,IDC_STATIC,7,7,20,20
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON1               ICON                    "CaixasDialogo\\chat.ico"
+IDI_ICON2               ICON                    "CaixasDialogo\\key.ico"
+IDI_ICON3               ICON                    "CaixasDialogo\\user_group.ico"
+IDI_ICON4               ICON                    "CaixasDialogo\\comment_private.ico"
+#endif    // Portuguese (Portugal) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
