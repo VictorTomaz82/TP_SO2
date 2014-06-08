@@ -9,6 +9,10 @@
 #include "DLLTP.h"
 #define TAM 255
 
+//definir o nome dos named pipes
+#define PIPE_NAME TEXT("\\\\.\\pipe\\comunicacao")
+#define PIPE_NAME2 TEXT("\\\\.\\pipe\\difusao")
+
 //=======================================================================declaraçoes temporarias
 int NAutenticar(TCHAR *login, TCHAR *pass);
 int NCriaNovoUtilizador(TCHAR *login, TCHAR *pass);
@@ -24,12 +28,6 @@ void NEnviarMensagemPública(TCHAR *msg);
 int NSair();
 int NDesligar();
 //=======================================================================declaraçoes temporarias
-
-
-
-
-#define PIPE_NAME TEXT("\\\\.\\pipe\\comunicacao")
-#define PIPE_NAME2 TEXT("\\\\.\\pipe\\difusao")
 
 // Variável global hInstance usada para guardar "hInst" inicializada na função
 // WinMain(). "hInstance" é necessária no bloco WinProc() para lançar a Dialog
@@ -94,6 +92,8 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	MSG lpMsg;			// Estrutura das mensagens
 	WNDCLASSEX wcApp,wcApp2;	// Estrutura que define a classe da janela
 	HACCEL hAccel;		// Handler da resource accelerators (teclas de atalho do menu)
+
+	LPTSTR lpszWrite = TEXT("Mensagem enviada pelo cliente!"); //mensagem de teste
 
 	//valores usados na definiçao da classe da janela
 	wcApp.cbSize = sizeof(WNDCLASSEX);	
@@ -165,6 +165,51 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	ShowWindow(hWnd, nCmdShow);	// "hWnd"= handler da janela "nCmdShow"= modo, parâmetro de WinMain()
 	UpdateWindow(hWnd);			// Refrescar a janela (gera WM_PAINT) 
 
+	
+	///////////////////////////////////LIGAÇÂO AOS PIPES/////////////////////////////////////
+
+	//Verifica se o pipe de comunicaçao existe
+	
+	if (!WaitNamedPipe(PIPE_NAME, NMPWAIT_WAIT_FOREVER)) {
+		MessageBox(NULL, TEXT("Nao encontrou o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+    }
+
+	//instancia o pipe
+    hPipeComunicacao = CreateFile(PIPE_NAME, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hPipeComunicacao==NULL) {
+		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+    }
+
+	//é preciso pra nao dar erro :" no error"
+	Sleep(200);
+
+	//esperar pelo pipe de difusao
+		if (!WaitNamedPipe(PIPE_NAME2, NMPWAIT_WAIT_FOREVER)) {
+		MessageBox(NULL, TEXT("Nao encontrou o pipe de difusao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+    }
+
+	//instancia o pipe de difusao
+    hPipeDifusao = CreateFile(PIPE_NAME2, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hPipeDifusao==NULL) {
+		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de difusao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+    }
+
+	//mensagem de teste	
+	WriteFile(hPipeComunicacao, lpszWrite, (lstrlen(lpszWrite)+1)*sizeof(TCHAR), &n, NULL);
+
+
+
+
+
+
 	// ============================================================================
 	// Loop de Mensagens
 	// Para usar as teclas aceleradoras do menu é necessário chamar a função
@@ -205,18 +250,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 
 		// Criação da Janela: Criar uma janela virtual para memorizar oconteúdo da actual
-		maxX = GetSystemMetrics(SM_CXSCREEN);		// Tamanho máximo = Écran (caso de a janela
-		// real estar maximizada)
+		maxX = GetSystemMetrics(SM_CXSCREEN);		// Tamanho máximo = Écran (caso de a janela real estar maximizada)
 		maxY = GetSystemMetrics(SM_CYSCREEN);
 		hdc = GetDC(hWnd);
 		memdc = CreateCompatibleDC(hdc);					// Criar janela virtual
 		hbit = CreateCompatibleBitmap(hdc, maxX, maxY);
 		SelectObject(memdc, hbit);
-		hbrush = (HBRUSH)GetStockObject(WHITE_BRUSH);				// Fundo jan.virtual=branco
+		hbrush = (HBRUSH)GetStockObject(WHITE_BRUSH);		// Fundo jan.virtual=branco
 		SelectObject(memdc, hbrush);
 		PatBlt(memdc, 0, 0, maxX, maxY, PATCOPY);
 		ReleaseDC(hWnd, hdc);
-
 
 	//parte de comunicaçao
 
@@ -681,47 +724,8 @@ DWORD WINAPI TFuncEnvioPrivado( LPVOID lpParam )
 /* Valida o acesso a um dado login e password de um dado utilizador.
 	Esta função retorna a validação (sucesso ou insucesso) e ainda se o
 	utilizador em causa é administrador.*/
-int NAutenticar(TCHAR *login, TCHAR *pass)										//pra já so serve pra ver a comunicaçao
+int NAutenticar(TCHAR *login, TCHAR *pass)
 {
-	HWND hWnd;
-	LPTSTR lpszWrite = TEXT("Mensagem enviada pelo cliente!");
-		
-	//Verifica se o pipe de comunicaçao existe
-	
-	if (!WaitNamedPipe(PIPE_NAME, NMPWAIT_WAIT_FOREVER)) {
-		MessageBox(NULL, TEXT("Nao encontrou o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
-		//exit(1);
-		return 1;
-    }
-
-	//instancia o pipe
-    hPipeComunicacao = CreateFile(PIPE_NAME, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hPipeComunicacao==NULL) {
-		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
-		//exit(1);
-		return 1;
-    }
-
-	//é preciso pra nao dar erro :" no error"
-	Sleep(200);
-
-	//esperar pelo pipe de difusao
-		if (!WaitNamedPipe(PIPE_NAME2, NMPWAIT_WAIT_FOREVER)) {
-		MessageBox(NULL, TEXT("Nao encontrou o pipe de difusao!"), TEXT("ERRO!"), MB_OK);
-		//exit(1);
-		return 1;
-    }
-
-	//instancia o pipe de difusao
-    hPipeDifusao = CreateFile(PIPE_NAME2, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hPipeDifusao==NULL) {
-		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de difusao!"), TEXT("ERRO!"), MB_OK);
-		//exit(1);
-		return 1;
-    }
-
-	//mensagem de teste	
-	WriteFile(hPipeComunicacao, lpszWrite, (lstrlen(lpszWrite)+1)*sizeof(TCHAR), &n, NULL);
 
 	return 0;
 }
