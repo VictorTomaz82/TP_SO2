@@ -9,11 +9,23 @@
 #include <aclapi.h>
 #include <strsafe.h>
 
+#define TAMLOGIN 15
+#define TAMPASS 15
+#define TAMTEXTO 100
+
+
 #define NCLIENTES 30
 #define PIPE_NAME TEXT("\\\\.\\pipe\\comunicacao")
 #define PIPE_NAME2 TEXT("\\\\.\\pipe\\difusao")
 
-//
+//Vai estar na dll
+typedef struct{
+	TCHAR login[TAMLOGIN], password[TAMPASS];
+	int tipo; //1-utilizador 2-admin
+	int estado; //0-livre 1-ocupado numa conversa privada
+}UTILIZADOR;
+
+
 HANDLE hPipesDifusao[NCLIENTES]={NULL};
 int total=0; //total de utilizadores ja registados
 
@@ -58,6 +70,80 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 	return 0;
 }
 
+
+//Cria novo utilizador
+//Retorn 1 se for bem sucedido
+//ou 0 caso contrario
+boolean CriaNovoUtilizador(UTILIZADOR *user){
+	HKEY chave;
+	DWORD queAconteceu;
+	DWORD versao, tamanho;
+	DWORD NRUseres = 1;
+	TCHAR buf[6];
+	char charBUF[6];
+
+
+
+	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE,TEXT("Software\\SO2Chat\\Utilizadores"),0, NULL, 
+		REG_OPTION_NON_VOLATILE, //Fica mesmo apos fechar o programa
+		KEY_ALL_ACCESS,	//O que vai ser feito no programa
+		NULL,	//Assim o Null Esta a criar permissões para todos de read
+		&chave,  //Handle da chave
+		&queAconteceu	//O que aconteceu [ É criada ou já foi criada(se já exisitir devolve com o valor a informar que já foi aberta)]
+		) != ERROR_SUCCESS)
+		_tprintf(TEXT("Erro ao criar/abrir chave"));
+	else
+		//Se a chave foi criada, inicializar os valores
+		if(queAconteceu == REG_CREATED_NEW_KEY){
+			_tprintf(TEXT("Chave: HKEY_LOCAL_MACHINE\\Software\\SO2Chat\\Utilizadores criada\n"));
+			//RegSetValueEx(chave, TEXT("Total_utilizadores"), 0, REG_SZ, (LPBYTE) TEXT("Jorge"), _tcslen(TEXT("Jorge"))*sizeof(TCHAR));
+
+			/*RegQueryValueEx(chave, TEXT("TotalUsers"), NULL, NULL, (LPBYTE)NRUseres, &NRUseres);
+			NRUseres++;*/
+
+			RegSetValueEx(chave, TEXT("TotalUsers"), 0, REG_DWORD, (LPBYTE)&NRUseres, sizeof(DWORD));
+
+			RegSetValueEx(chave, (LPCSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
+
+			_tprintf(TEXT("Utilizador %s adicionado\n"),user->login);
+			//sprintf(buf,"T_%s", user->login);
+
+			//RegSetValueEx(chave, "Teste", 0, REG_DWORD, (LPBYTE)&user->tipo, sizeof(int)*(sizeof(user->tipo)));
+
+			//sprintf(charBUF,"E_%s", user->login);
+			//RegSetValueEx(chave, (LPCSTR)charBUF, 0, REG_DWORD, (LPBYTE)&user->estado, sizeof(int)*(sizeof(user->estado)));
+
+
+			//RegSetValueEx(chave, TEXT("admi"), 0, REG_DWORD, (LPBYTE)&Users, sizeof(TCHAR));
+			//RegSetValueEx(chave, TEXT("admin"), 0, REG_DWORD, (LPBYTE)&PIN, sizeof(TCHAR));
+			//MessageBox(hWnd, TEXT("Valores Autor e Versão guardados"), TEXT("Registry"), MB_OK );
+			//Acrescentado
+			//RegSetValueEx(chave,TEXT("ListaInteiros"),0,REG_BINARY,(LPBYTE)valores,sizeof(valores));
+			//RegSetValueEx(chave,TEXT("ListaUtilizadores"),0,REG_BINARY,(LPBYTE)valores,sizeof(valores));
+			//MessageBox(hWnd, TEXT("Lista"), TEXT("Já guardada"),MB_OK);
+
+		}else if(queAconteceu == REG_OPENED_EXISTING_KEY){
+
+			RegSetValueEx(chave, (LPCSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
+
+			RegQueryValueEx(chave, TEXT("TotalUsers"), NULL, NULL, (LPBYTE)NRUseres, &NRUseres);
+
+			NRUseres++;
+			RegSetValueEx(chave, TEXT("TotalUsers"), 0, REG_DWORD, (LPBYTE)&NRUseres, sizeof(DWORD));
+
+			_tprintf(TEXT("Utilizador %s adicionado\n"),user->login);
+			_tprintf(TEXT("Existem %d Utilizadores\n"),NRUseres);
+			//Falta ainda os parametros do tipo e do estado
+
+
+		}
+
+		return 0;
+};
+
+
+
+
 void main(void) {
     
 	TCHAR buf[256];
@@ -75,6 +161,12 @@ void main(void) {
 	TCHAR str[256];
 	//=======================================
 
+	//Estrutura teste
+		UTILIZADOR novo[3]= {
+		{TEXT("Admin"),TEXT("admin"),0,0},
+		{ TEXT("ZE"),TEXT("ZE"),0,0}
+	};
+
 
 	//UNICODE: By default, windows console does not process wide characters. 
 	//Probably the simplest way to enable that functionality is to call _setmode:
@@ -83,6 +175,12 @@ void main(void) {
 	_setmode(_fileno(stdout), _O_WTEXT); 
 #endif
 
+	
+	//Teste de criar utilizador e salvar no regedit
+	//Tenho de enviar os dados em separado
+	for (i = 0; i < 2; i++){
+	CriaNovoUtilizador(&novo[i]);
+	}
 
 
 
