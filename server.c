@@ -6,7 +6,7 @@
 #include <windows.h>
 
 #define NCLIENTES 30
-#define PIPE_NAME TEXT("\\\\.\\pipe\\teste")
+#define PIPE_NAME TEXT("\\\\.\\pipe\\comunicacao")
 #define PIPE_NAME2 TEXT("\\\\.\\pipe\\difusao")
 
 //
@@ -24,7 +24,7 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 	_tprintf(TEXT("[SERVIDOR-%d] Um cliente ligou-se...\n"),GetCurrentThreadId());
 	while (1) {
 		ret = ReadFile(hPipe, buf, sizeof(buf), &n, NULL);
-		buf[n / sizeof(TCHAR)] = '\0';
+		buf[n / sizeof(TCHAR)*2] = '\0';
 		if (!ret || !n)
 			break;
 		_tprintf(TEXT("[SERVIDOR-%d] Recebi %d bytes: '%s'... (ReadFile)\n"), GetCurrentThreadId(), n, buf);
@@ -70,7 +70,8 @@ void main(void) {
 			_tperror(TEXT("Limite de clientes atingido!"));
 			break;
 		}
-	
+
+
 	
 		_tprintf(TEXT("[SERVIDOR] Esperar ligação de um cliente... (ConnectNamedPipe)\n"));
 		if(!ConnectNamedPipe(hPipe, NULL)){
@@ -79,6 +80,7 @@ void main(void) {
 		}
 
 		//2ndo named pipe
+		_tprintf(TEXT("[SERVIDOR] Vou passar à criação de uma cópia do pipe '%s'... (CreateNamedPipe)\n"), PIPE_NAME2);
 		hPipesDifusao[total] = CreateNamedPipe(PIPE_NAME2, PIPE_ACCESS_OUTBOUND, PIPE_WAIT | PIPE_TYPE_MESSAGE
 								| PIPE_READMODE_MESSAGE, NCLIENTES, sizeof(buf), sizeof(buf), 1000, NULL);
 		if(hPipesDifusao[total] == INVALID_HANDLE_VALUE){
@@ -86,6 +88,7 @@ void main(void) {
 			break;
 		}
 	
+
 	
 		_tprintf(TEXT("[SERVIDOR] Esperar ligação de um cliente... (ConnectNamedPipe)\n"));
 		if(!ConnectNamedPipe(hPipesDifusao[total], NULL)){

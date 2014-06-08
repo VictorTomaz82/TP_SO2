@@ -9,7 +9,27 @@
 #include "DLLTP.h"
 #define TAM 255
 
-#define PIPE_NAME TEXT("\\\\.\\pipe\\teste")
+//=======================================================================declaraçoes temporarias
+int NAutenticar(TCHAR *login, TCHAR *pass);
+int NCriaNovoUtilizador(TCHAR *login, TCHAR *pass);
+int NLerListaUtilizadores(UTILIZADOR *utilizadores);
+int NLerListaUtilizadoresRegistados(UTILIZADOR *utilizadores);
+int NIniciarConversa(TCHAR *utilizador);
+int NDesligarConversa();	
+int NEnviarMensagemPrivada(TCHAR *msg);
+void NEnviarMensagemPública(TCHAR *msg);	
+//CHAT NLerInformacaoInicial();
+//MENSAGEM NLerMensagensPublicas();
+//MENSAGEM NLerMensagensPrivadas();
+int NSair();
+int NDesligar();
+//=======================================================================declaraçoes temporarias
+
+
+
+
+#define PIPE_NAME TEXT("\\\\.\\pipe\\comunicacao")
+#define PIPE_NAME2 TEXT("\\\\.\\pipe\\difusao")
 
 // Variável global hInstance usada para guardar "hInst" inicializada na função
 // WinMain(). "hInstance" é necessária no bloco WinProc() para lançar a Dialog
@@ -19,7 +39,8 @@ int linha = 0;
 
 //dados para usar no pipe
 DWORD n;
-HANDLE hPipe;
+HANDLE hPipeComunicacao;
+HANDLE hPipeDifusao;
 
 //UNICODE: By default, windows console does not process wide characters. 
 //Probably the simplest way to enable that functionality is to call _setmode:
@@ -245,11 +266,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 		for (i = 0; i < totalonline; i++){
 			SendDlgItemMessage(hWndList, NULL, LB_ADDSTRING, 0, (LPARAM)online[i].login);
 		}
-		total = LerListaUtilizadoresRegistados(users);
+		total = NLerListaUtilizadoresRegistados(users);
 
 	case WM_PAINT:
 		//actualiza a listbox da main window
-		totalonline = LerListaUtilizadores(online);
+		totalonline = NLerListaUtilizadores(online);
 		for (i = 0; i < totalonline; i++){
 			SendDlgItemMessage(hWnd, IDC_LIST1, LB_ADDSTRING, 0, (LPARAM)online[i].login);
 		}
@@ -292,7 +313,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 			break;
 		case ID_GERIR_DESLIGARSERVER:
 			//envia mensagem ao server para ele se desligar 
-			Desligar();
+			NDesligar();
 			break;
 		case ID_ACERCA:
 			DialogBox(hInstance, (LPCWSTR)IDD_DIALOG1, hWnd, (DLGPROC)DialogAcerca);
@@ -395,7 +416,7 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 		//==============================================================================
 	case WM_CLOSE:
 		//desliga a conversa privada
-		DesligarConversa();
+		NDesligarConversa();
 
 		//resposta = MessageBox(hWnd, TEXT("Terminar o Programa?"), TEXT("Fim"), MB_YESNO | MB_ICONQUESTION);
 		//if (resposta == IDYES)
@@ -437,7 +458,7 @@ INT CALLBACK DialogAutenticacao(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPa
 
 			GetDlgItemText(hWnd, IDC_EDIT1, login, 30);
 			GetDlgItemText(hWnd, IDC_EDIT2, passwd, 30);				
-			if (Autenticar(login, passwd)){
+			if (!NAutenticar(login, passwd)){
 				MessageBox(hWnd, TEXT("Aceite"), TEXT("Login"), MB_OK);
 				EnviarMensagemPública(TEXT("Olá"));
 				ultima = LerMensagensPublicas();
@@ -505,7 +526,7 @@ BOOL CALLBACK DialogUtilizadores(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lP
 		return 1;
 
 	case WM_INITDIALOG:
-		totalonline = LerListaUtilizadores(online);
+		totalonline = NLerListaUtilizadores(online);
 		for (i = 0; i < totalonline; i++){
 			SendDlgItemMessage(hWnd, IDC_LIST1, LB_ADDSTRING, 0, (LPARAM)online[i].login);
 		}
@@ -645,42 +666,158 @@ void printChat(HWND hWnd){
 
 DWORD WINAPI TFuncEnvioPublico( LPVOID lpParam ) 
 { 
-	EnviarMensagemPública((TCHAR*)lpParam);
+	NEnviarMensagemPública((TCHAR*)lpParam);
 }
 
 DWORD WINAPI TFuncEnvioPrivado( LPVOID lpParam ) 
 { 
-	EnviarMensagemPrivada((TCHAR*)lpParam);
+	NEnviarMensagemPrivada((TCHAR*)lpParam);
 }
 
 
 
-//=====================================================FUNÇOES DO DLL=========================
+//=====================================================FUNÇOES DO DLL=======================================================
 
-//int Autenticar(TCHAR *login, TCHAR *pass)
+/* Valida o acesso a um dado login e password de um dado utilizador.
+	Esta função retorna a validação (sucesso ou insucesso) e ainda se o
+	utilizador em causa é administrador.*/
+int NAutenticar(TCHAR *login, TCHAR *pass)										//pra já so serve pra ver a comunicaçao
+{
+	HWND hWnd;
+		
+	//Verifica se o pipe de comunicaçao existe
+	
+	if (!WaitNamedPipe(PIPE_NAME, NMPWAIT_WAIT_FOREVER)) {
+		MessageBox(NULL, TEXT("Nao encontrou o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+    }
+
+	//instancia o pipe
+    hPipeComunicacao = CreateFile(PIPE_NAME, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hPipeComunicacao==NULL) {
+		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+    }
+
+	//é preciso pra nao dar erro :" no error"
+	Sleep(200);
+
+	//esperar pelo pipe de difusao
+		if (!WaitNamedPipe(PIPE_NAME2, NMPWAIT_WAIT_FOREVER)) {
+		MessageBox(NULL, TEXT("Nao encontrou o pipe de difusao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+    }
+
+	//instancia o pipe de difusao
+    hPipeDifusao = CreateFile(PIPE_NAME2, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hPipeDifusao==NULL) {
+		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de difusao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+    }
+
+	//mensagem de teste
+	WriteFile(hPipeComunicacao, TEXT("ok!"), 5*sizeof(TCHAR), &n, NULL);
+
+	return 0;
+}
+
+int NCriaNovoUtilizador(TCHAR *login, TCHAR *pass)
+{
+	//verifica se existe o login no registo
+	//caso nao haja acrescenta a info
+
+	return 0;
+}
+
+
+/* Recebe (por argumento) informação actualizada de forma autónoma
+sobre os jogadores online.*/
+int NLerListaUtilizadores(UTILIZADOR *utilizadores)
+{
+
+	return 0;
+}
+
+/*Opcional, só para saber que utilizadores existem e quais são os seus detalhes*/
+int NLerListaUtilizadoresRegistados(UTILIZADOR *utilizadores)
+{
+
+	return 0;
+}
+
+/* Pede permissão para iniciar conversa privada com um dado
+utilizador. Caso este esteja livre é aceite, caso esteja já em
+conversa privada com outro utilizador o pedido é recusado.*/
+int NIniciarConversa(TCHAR *utilizador)
+{
+
+	return 0;
+}
+
+/* Comunica ao servidor que deseja terminar a conversa que mantém
+actualmente em privado com um outro utilizador. As novas mensagens
+enviadas em privado por este ou pelo outro serão rejeitadas. Esta
+função devolve um código de erro, caso este utilizador não mantinha
+qualquer conversa privada.*/
+int NDesligarConversa()
+{
+
+	return 0;
+}
+
+/*Enviar a mensagem ao utilizador com quem mantemos a conversa
+privada. Caso o utilizador destinatário já tenha desligado (ou este)
+esta conversa, a função devolve um código de erro.*/	
+int NEnviarMensagemPrivada(TCHAR *msg)
+{
+
+	return 0;
+}
+
+/*Enviar a mensagem a todos os utilizadores online.*/
+void NEnviarMensagemPública(TCHAR *msg)
+{
+
+}
+
+/* Recebe toda informação histórica necessária para apresentação nas
+janelas de conversa pública e privada.*/	
+//CHAT NLerInformacaoInicial()
 //{
-//		//==============Verifica se o pipe/server existe=============
-//	
-//	//_tprintf(TEXT("[CLIENTE] Esperar pelo pipe '%s'... (WaitNamedPipe)\n"), PIPE_NAME);
-//	if (!WaitNamedPipe(PIPE_NAME, NMPWAIT_WAIT_FOREVER)) {
-//        //_tprintf(TEXT("[ERRO] Ligar ao pipe '%s'... (WaitNamedPipe)\n"), PIPE_NAME);
 //
-//		//so está assim pra dar pra ver a janela de erro
-//		//resposta=MessageBox(hWnd, TEXT("Nao encontrou o pipe!"), TEXT("ERRO!"), MB_OK);
-//		//exit(1);
-//    }
-//
-//	//_tprintf(TEXT("[CLIENTE] Ligação ao servidor... (CreateFile)\n"));
-//    hPipe = CreateFile(PIPE_NAME, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-//    if (hPipe==NULL) {
-//        //_tprintf(TEXT("[ERRO] Ligar ao pipe '%s'... (CreateFile)\n"), PIPE_NAME);
-//		//resposta=MessageBox(hWnd, TEXT("Erro ao instanciar o pipe!"), TEXT("ERRO!"), MB_OK);
-//		//exit(1);
-//    }
-//	//if(resposta) exit(1);
-//
-//	//MessageBox(hWnd, TEXT("Ligação ao server"), TEXT("Fim"), MB_OK);
-//
+//}
+	
+/*Recebe informação autonomamente que é enviada pelo servidor e
+acrescenta no fundo da janela de conversa pública.*/
+//MENSAGEM NLerMensagensPublicas()
+//{
 //
 //
 //}
+
+/*Recebe informação autonomamente que é enviada pelo servidor e
+acrescenta no fundo da janela de conversa privada.*/
+//MENSAGEM NLerMensagensPrivadas()
+//{
+//
+//}
+
+/* Envia o pedido de saída (logout) do sistema ao servidor. */
+int NSair()
+{
+
+	return 0;
+}
+
+/* Envia o pedido de encerramento do sistema ao servidor. */
+int NDesligar()
+{
+
+	return 0;
+}
+
+//==========================================================================================================================
