@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <windows.h>
 
-
 #include <aclapi.h>
 #include <strsafe.h>
 
@@ -78,7 +77,7 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 	HKEY chave;
 	DWORD queAconteceu;
 	DWORD versao, tamanho;
-	DWORD NRUseres = 1;
+	DWORD NRUseres = 0;
 	TCHAR buf[6];
 	char charBUF[6];
 
@@ -95,41 +94,33 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 	else
 		//Se a chave foi criada, inicializar os valores
 		if(queAconteceu == REG_CREATED_NEW_KEY){
+
 			_tprintf(TEXT("Chave: HKEY_LOCAL_MACHINE\\Software\\SO2Chat\\Utilizadores criada\n"));
+
 			//RegSetValueEx(chave, TEXT("Total_utilizadores"), 0, REG_SZ, (LPBYTE) TEXT("Jorge"), _tcslen(TEXT("Jorge"))*sizeof(TCHAR));
 
-			/*RegQueryValueEx(chave, TEXT("TotalUsers"), NULL, NULL, (LPBYTE)NRUseres, &NRUseres);
-			NRUseres++;*/
+			NRUseres = 1;
+
 
 			RegSetValueEx(chave, TEXT("TotalUsers"), 0, REG_DWORD, (LPBYTE)&NRUseres, sizeof(DWORD));
 
 			RegSetValueEx(chave, (LPCSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
 
-			_tprintf(TEXT("Utilizador %s adicionado\n"),user->login);
-			//sprintf(buf,"T_%s", user->login);
-
-			//RegSetValueEx(chave, "Teste", 0, REG_DWORD, (LPBYTE)&user->tipo, sizeof(int)*(sizeof(user->tipo)));
-
-			//sprintf(charBUF,"E_%s", user->login);
-			//RegSetValueEx(chave, (LPCSTR)charBUF, 0, REG_DWORD, (LPBYTE)&user->estado, sizeof(int)*(sizeof(user->estado)));
-
-
-			//RegSetValueEx(chave, TEXT("admi"), 0, REG_DWORD, (LPBYTE)&Users, sizeof(TCHAR));
-			//RegSetValueEx(chave, TEXT("admin"), 0, REG_DWORD, (LPBYTE)&PIN, sizeof(TCHAR));
-			//MessageBox(hWnd, TEXT("Valores Autor e Versão guardados"), TEXT("Registry"), MB_OK );
-			//Acrescentado
-			//RegSetValueEx(chave,TEXT("ListaInteiros"),0,REG_BINARY,(LPBYTE)valores,sizeof(valores));
-			//RegSetValueEx(chave,TEXT("ListaUtilizadores"),0,REG_BINARY,(LPBYTE)valores,sizeof(valores));
-			//MessageBox(hWnd, TEXT("Lista"), TEXT("Já guardada"),MB_OK);
+			_tprintf(TEXT("Utilizador %s adicionado\n"),&user->login);
 
 		}else if(queAconteceu == REG_OPENED_EXISTING_KEY){
 
+
+
+
 			RegSetValueEx(chave, (LPCSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
 
-			RegQueryValueEx(chave, TEXT("TotalUsers"), NULL, NULL, (LPBYTE)NRUseres, &NRUseres);
+			//			NRUseres = RegQueryValueEx(chave, TEXT("TotalUsers"), NULL, NULL, (LPBYTE)NRUseres, &NRUseres);
+			//		NRUseres++;
+			//	RegSetValueEx(chave, TEXT("TotalUsers"), 0, REG_DWORD, (LPBYTE)&NRUseres, sizeof(DWORD));
 
-			NRUseres++;
-			RegSetValueEx(chave, TEXT("TotalUsers"), 0, REG_DWORD, (LPBYTE)&NRUseres, sizeof(DWORD));
+
+
 
 			_tprintf(TEXT("Utilizador %s adicionado\n"),user->login);
 			_tprintf(TEXT("Existem %d Utilizadores\n"),NRUseres);
@@ -145,9 +136,9 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 
 
 void main(void) {
-    
+
 	TCHAR buf[256];
-    HANDLE hPipe;
+	HANDLE hPipe;
 	HANDLE threads[NCLIENTES];
 	int i;
 
@@ -162,7 +153,7 @@ void main(void) {
 	//=======================================
 
 	//Estrutura teste
-		UTILIZADOR novo[3]= {
+	UTILIZADOR novo[3]= {
 		{TEXT("Admin"),TEXT("admin"),0,0},
 		{ TEXT("ZE"),TEXT("ZE"),0,0}
 	};
@@ -175,11 +166,11 @@ void main(void) {
 	_setmode(_fileno(stdout), _O_WTEXT); 
 #endif
 
-	
+
 	//Teste de criar utilizador e salvar no regedit
 	//Tenho de enviar os dados em separado
 	for (i = 0; i < 2; i++){
-	CriaNovoUtilizador(&novo[i]);
+		CriaNovoUtilizador(&novo[i]);
 	}
 
 
@@ -232,14 +223,14 @@ void main(void) {
 	while (1){
 		_tprintf(TEXT("[SERVIDOR] Vou passar à criação de uma cópia do pipe '%s'... (CreateNamedPipe)\n"), PIPE_NAME);
 		hPipe = CreateNamedPipe(PIPE_NAME, PIPE_ACCESS_DUPLEX, PIPE_WAIT | PIPE_TYPE_MESSAGE
-								| PIPE_READMODE_MESSAGE, NCLIENTES, sizeof(buf), sizeof(buf), 1000,&sa);
+			| PIPE_READMODE_MESSAGE, NCLIENTES, sizeof(buf), sizeof(buf), 1000,&sa);
 		if(hPipe == INVALID_HANDLE_VALUE){
 			_tperror(TEXT("Limite de clientes atingido!"));
 			break;
 		}
 
 
-	
+
 		_tprintf(TEXT("[SERVIDOR] Esperar ligação de um cliente... (ConnectNamedPipe)\n"));
 		if(!ConnectNamedPipe(hPipe, NULL)){
 			_tperror(TEXT("Erro na ligação ao cliente!"));
@@ -254,9 +245,9 @@ void main(void) {
 			_tperror(TEXT("Limite de clientes atingido!"));
 			break;
 		}
-	
 
-	
+
+
 		_tprintf(TEXT("[SERVIDOR] Esperar ligação de um cliente... (ConnectNamedPipe)\n"));
 		if(!ConnectNamedPipe(hPipesDifusao[total], NULL)){
 			_tperror(TEXT("Erro na ligação ao cliente!"));
@@ -267,48 +258,48 @@ void main(void) {
 
 		//Lançar thread
 		threads[total++]=CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)AtendeCliente, (LPVOID)hPipe, 0, NULL);
-		
+
 		Sleep(200);
 	}
 	//Fora do ciclo de criação das threads
 	//Esperar threads terminarem
-	for (i = 0; i < total; i++)
+	for (i = 0; i < total; i++){
 		WaitForSingleObject(threads[total], INFINITE);
-	
+	}
 }
 
 // Retrieve the system error message for the last-error code
 void ErrorExit(LPTSTR lpszFunction) 
 { 
 
-    LPVOID lpMsgBuf;
-    LPVOID lpDisplayBuf;
-    DWORD dw = GetLastError(); 
+	LPVOID lpMsgBuf;
+	LPVOID lpDisplayBuf;
+	DWORD dw = GetLastError(); 
 
 
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        dw,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &lpMsgBuf,
-        0, NULL );
+	FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		dw,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR) &lpMsgBuf,
+		0, NULL );
 
-    // Display the error message and exit the process
+	// Display the error message and exit the process
 
-    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
-        (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)); 
-    StringCchPrintf((LPTSTR)lpDisplayBuf, 
-        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-        TEXT("%s failed with error %d: %s"), 
-        lpszFunction, dw, lpMsgBuf); 
-    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
+	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
+		(lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)); 
+	StringCchPrintf((LPTSTR)lpDisplayBuf, 
+		LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+		TEXT("%s failed with error %d: %s"), 
+		lpszFunction, dw, lpMsgBuf); 
+	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
 
-    LocalFree(lpMsgBuf);
-    LocalFree(lpDisplayBuf);
-    ExitProcess(dw); 
+	LocalFree(lpMsgBuf);
+	LocalFree(lpDisplayBuf);
+	ExitProcess(dw); 
 }
 
 // Buffer clean up routine
