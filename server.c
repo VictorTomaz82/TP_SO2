@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <windows.h>
 
+#include "DLLTP.h"
+
 #include <aclapi.h>
 #include <strsafe.h>
 
@@ -18,11 +20,11 @@
 #define PIPE_NAME2 TEXT("\\\\.\\pipe\\difusao")
 
 //Vai estar na dll
-typedef struct{
-	TCHAR login[TAMLOGIN], password[TAMPASS];
-	int tipo; //1-utilizador 2-admin
-	int estado; //0-livre 1-ocupado numa conversa privada
-}UTILIZADOR;
+//typedef struct{
+//	TCHAR login[TAMLOGIN], password[TAMPASS];
+//	int tipo; //1-utilizador 2-admin
+//	int estado; //0-livre 1-ocupado numa conversa privada
+//}UTILIZADOR;
 
 
 HANDLE hPipesDifusao[NCLIENTES]={NULL};
@@ -90,7 +92,7 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 		&chave,  //Handle da chave
 		&queAconteceu	//O que aconteceu [ É criada ou já foi criada(se já exisitir devolve com o valor a informar que já foi aberta)]
 		) != ERROR_SUCCESS)
-		_tprintf(TEXT("Erro ao criar/abrir chave"));
+		_tprintf(TEXT("Erro ao criar/abrir chave\n"));
 	else
 		//Se a chave foi criada, inicializar os valores
 		if(queAconteceu == REG_CREATED_NEW_KEY){
@@ -104,7 +106,7 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 
 			RegSetValueEx(chave, TEXT("TotalUsers"), 0, REG_DWORD, (LPBYTE)&NRUseres, sizeof(DWORD));
 
-			RegSetValueEx(chave, (LPCSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
+			RegSetValueEx(chave, (LPCWSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
 
 			_tprintf(TEXT("Utilizador %s adicionado\n"),&user->login);
 
@@ -113,7 +115,7 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 
 
 
-			RegSetValueEx(chave, (LPCSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
+			RegSetValueEx(chave, (LPCWSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
 
 			//			NRUseres = RegQueryValueEx(chave, TEXT("TotalUsers"), NULL, NULL, (LPBYTE)NRUseres, &NRUseres);
 			//		NRUseres++;
