@@ -684,6 +684,7 @@ DWORD WINAPI TFuncEnvioPrivado( LPVOID lpParam )
 int NAutenticar(TCHAR *login, TCHAR *pass)										//pra já so serve pra ver a comunicaçao
 {
 	HWND hWnd;
+	LPTSTR lpszWrite = TEXT("Mensagem enviada pelo cliente!");
 		
 	//Verifica se o pipe de comunicaçao existe
 	
@@ -719,8 +720,8 @@ int NAutenticar(TCHAR *login, TCHAR *pass)										//pra já so serve pra ver a 
 		return 1;
     }
 
-	//mensagem de teste
-	WriteFile(hPipeComunicacao, TEXT("ok!"), 5*sizeof(TCHAR), &n, NULL);
+	//mensagem de teste	
+	WriteFile(hPipeComunicacao, lpszWrite, (lstrlen(lpszWrite)+1)*sizeof(TCHAR), &n, NULL);
 
 	return 0;
 }
