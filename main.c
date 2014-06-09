@@ -79,6 +79,7 @@ UTILIZADOR online[NUMUTILIZADORES];
 int totalonline;
 CHAT mychat;
 
+BOOL SESSAO; //Estado da sessão (autenticado aou não)
 
 // ============================================================================
 // WinMain()
@@ -142,6 +143,47 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	// ============================================================================
 	hInstance=hInst;
 
+	///////////////////////////////////LIGAÇÂO AOS PIPES/////////////////////////////////////
+
+	//Verifica se o pipe de comunicaçao existe
+
+	if (!WaitNamedPipe(PIPE_NAME, NMPWAIT_WAIT_FOREVER)) {
+		MessageBox(NULL, TEXT("Nao encontrou o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+	}
+
+	//instancia o pipe
+	hPipeComunicacao = CreateFile(PIPE_NAME, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hPipeComunicacao==NULL) {
+		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+	}
+
+	//é preciso pra nao dar erro :" no error"
+	Sleep(200);
+
+	//esperar pelo pipe de difusao
+	if (!WaitNamedPipe(PIPE_NAME2, NMPWAIT_WAIT_FOREVER)) {
+		MessageBox(NULL, TEXT("Nao encontrou o pipe de difusao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+	}
+
+	//instancia o pipe de difusao
+	hPipeDifusao = CreateFile(PIPE_NAME2, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hPipeDifusao==NULL) {
+		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de difusao!"), TEXT("ERRO!"), MB_OK);
+		//exit(1);
+		return 1;
+	}
+
+	//mensagem de teste	
+	WriteFile(hPipeComunicacao, lpszWrite, (lstrlen(lpszWrite)+1)*sizeof(TCHAR), &n, NULL);
+
+
+
 	//criação da janela principal
 	hWnd = CreateWindow(
 		TEXT("Chat"),				// Nome da janela e/ou programa
@@ -165,50 +207,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 
 	ShowWindow(hWnd, nCmdShow);	// "hWnd"= handler da janela "nCmdShow"= modo, parâmetro de WinMain()
 	UpdateWindow(hWnd);			// Refrescar a janela (gera WM_PAINT) 
-
-	
-	///////////////////////////////////LIGAÇÂO AOS PIPES/////////////////////////////////////
-
-	//Verifica se o pipe de comunicaçao existe
-	
-	if (!WaitNamedPipe(PIPE_NAME, NMPWAIT_WAIT_FOREVER)) {
-		MessageBox(NULL, TEXT("Nao encontrou o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
-		//exit(1);
-		return 1;
-    }
-
-	//instancia o pipe
-    hPipeComunicacao = CreateFile(PIPE_NAME, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hPipeComunicacao==NULL) {
-		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
-		//exit(1);
-		return 1;
-    }
-
-	//é preciso pra nao dar erro :" no error"
-	Sleep(200);
-
-	//esperar pelo pipe de difusao
-		if (!WaitNamedPipe(PIPE_NAME2, NMPWAIT_WAIT_FOREVER)) {
-		MessageBox(NULL, TEXT("Nao encontrou o pipe de difusao!"), TEXT("ERRO!"), MB_OK);
-		//exit(1);
-		return 1;
-    }
-
-	//instancia o pipe de difusao
-    hPipeDifusao = CreateFile(PIPE_NAME2, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hPipeDifusao==NULL) {
-		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de difusao!"), TEXT("ERRO!"), MB_OK);
-		//exit(1);
-		return 1;
-    }
-
-	//mensagem de teste	
-	WriteFile(hPipeComunicacao, lpszWrite, (lstrlen(lpszWrite)+1)*sizeof(TCHAR), &n, NULL);
-
-
-
-
 
 
 	// ============================================================================
@@ -266,33 +264,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 		CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)EscutaDifusao, (LPVOID)hWnd, 0, NULL);
 
 
-	//parte de comunicaçao
+		//parte de comunicaçao
 
-	//do { 
-	//	//_tprintf(TEXT("[CLIENTE] Comando: "));
-	//	//_tscanf_s(TEXT("%s"), str, 256);
+		//do { 
+		//	//_tprintf(TEXT("[CLIENTE] Comando: "));
+		//	//_tscanf_s(TEXT("%s"), str, 256);
 
 
-	//	//if (!WriteFile(hPipe, str, _tcslen(str)*sizeof(TCHAR), &n, NULL)) {
-	//	if (!WriteFile(hPipe, "teste", 5*sizeof(TCHAR), &n, NULL)) {
-	//		//_tperror(TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"));
-	//		MessageBox(hWnd, TEXT("Erro ao escrever no pipe"), TEXT("Fim"), MB_OK);
-	//		exit(1);
-	//	}
-	//	//_tprintf(TEXT("[CLIENTE] Enviei %d bytes ao servidor... (WriteFile)\n"), n);
-	//	resposta=MessageBox(hWnd, TEXT("enviei dados. sair?"), TEXT("Fim"), MB_YESNO);
-	////} while (_tcscmp(str, TEXT("fim")));
-	//} while (!resposta);
+		//	//if (!WriteFile(hPipe, str, _tcslen(str)*sizeof(TCHAR), &n, NULL)) {
+		//	if (!WriteFile(hPipe, "teste", 5*sizeof(TCHAR), &n, NULL)) {
+		//		//_tperror(TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"));
+		//		MessageBox(hWnd, TEXT("Erro ao escrever no pipe"), TEXT("Fim"), MB_OK);
+		//		exit(1);
+		//	}
+		//	//_tprintf(TEXT("[CLIENTE] Enviei %d bytes ao servidor... (WriteFile)\n"), n);
+		//	resposta=MessageBox(hWnd, TEXT("enviei dados. sair?"), TEXT("Fim"), MB_YESNO);
+		////} while (_tcscmp(str, TEXT("fim")));
+		//} while (!resposta);
 
-	//Sleep(2000);
+		//Sleep(2000);
 
- //   //_tprintf(TEXT("[CLIENTE] Vou desligar o pipe... (CloseHandle)\n"));
- //   CloseHandle(hPipe);
+		//   //_tprintf(TEXT("[CLIENTE] Vou desligar o pipe... (CloseHandle)\n"));
+		//   CloseHandle(hPipe);
 
-	//Sleep(2000);
+		//Sleep(2000);
 
-	//exit(0);
-	//}
+		//exit(0);
+		//}
 
 		//Pede login
 		resposta=DialogBox(hInstance, (LPCWSTR)IDD_DIALOG2, hWnd, (DLGPROC)DialogAutenticacao);
@@ -355,7 +353,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 		case ID_LE:
 			DialogBox(hInstance, (LPCWSTR)IDD_DIALOG5, hWnd, (DLGPROC)DialogMessgPublica);
 			break;
-		//as proximas duas opccoes só vao estar disponiveis ao admin (vao estar escondidas aos restantes Utilizadores)
+			//as proximas duas opccoes só vao estar disponiveis ao admin (vao estar escondidas aos restantes Utilizadores)
 		case ID_GERIR_CRIARNOVOUTILIZADOR:
 			DialogBox(hInstance, (LPCWSTR)IDD_DIALOG7, hWnd, (DLGPROC)DialogGerir);
 			break;
@@ -483,7 +481,7 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 // ============================================================================
 INT CALLBACK DialogAutenticacao(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 {	
-	TCHAR login[30], passwd[30], mensagem[100];
+	TCHAR login[15], passwd[15], mensagem[100];
 	int i;
 	MENSAGEM ultima;
 	int resposta=0;
@@ -504,8 +502,8 @@ INT CALLBACK DialogAutenticacao(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPa
 			//Buscar as 2 strings
 			//Comparar com admin admin : em C++ ==, em C _tcscmp(str1,str2)
 
-			GetDlgItemText(hWnd, IDC_EDIT1, login, 30);
-			GetDlgItemText(hWnd, IDC_EDIT2, passwd, 30);				
+			GetDlgItemText(hWnd, IDC_EDIT1, login, 15);
+			GetDlgItemText(hWnd, IDC_EDIT2, passwd, 15);				
 			if (!NAutenticar(login, passwd)){
 				MessageBox(hWnd, TEXT("Aceite"), TEXT("Login"), MB_OK);
 				EnviarMensagemPública(TEXT("Olá"));
@@ -738,10 +736,10 @@ DWORD WINAPI EscutaDifusao(LPVOID param)
 			exit(1);
 		}
 
-				//for (; _tcscmp(mychat.publicas[linha].texto, TEXT("")); linha++){
+		//for (; _tcscmp(mychat.publicas[linha].texto, TEXT("")); linha++){
 		TextOut(hdc, 0, linha * 20, buf, _tcslen(buf));
 		TextOut(memdc, 0, linha* 20, buf, _tcslen(buf));
-				//}
+		//}
 		ReleaseDC(hWnd, hdc);
 	}
 
@@ -751,12 +749,37 @@ DWORD WINAPI EscutaDifusao(LPVOID param)
 //=====================================================FUNÇOES DO DLL=======================================================
 
 /* Valida o acesso a um dado login e password de um dado utilizador.
-	Esta função retorna a validação (sucesso ou insucesso) e ainda se o
-	utilizador em causa é administrador.*/
+Esta função retorna a validação (sucesso ou insucesso) e ainda se o
+utilizador em causa é administrador.*/
 int NAutenticar(TCHAR *login, TCHAR *pass)
 {
+	int i = 0;
+	int ret = 0;
+	MENSAGEM Autentica[3] = {{TEXT("Autentica"),NULL},
+	{(TCHAR)login,NULL},
+	{(TCHAR)pass,NULL}};
+	MENSAGEM buf[1];
 
-	return 0;
+	LPTSTR lpszWriteNA = TEXT("TESTE NAutentica");
+
+	/*for(i=0;i<3;i++){
+	WriteFile(hPipeComunicacao, (LPCVOID)&Autentica[i], (lstrlen((LPCWSTR)&Autentica)+1)*sizeof(MENSAGEM), &n, NULL);
+	Sleep(200);
+	}*/
+	WriteFile(hPipeComunicacao, lpszWriteNA, (lstrlen(lpszWriteNA)+1)*sizeof(TCHAR), &n, NULL);
+
+	ret = ReadFile(hPipeComunicacao, buf, sizeof(buf), &n, NULL);
+
+	if(buf->texto == TEXT("OK")){
+		//variavel de autenticação a TRUE
+		SESSAO = 1;
+		return 1;
+	}else{
+		//variavel de autenticação a FALSE
+		SESSAO = 0;
+		return 0;
+	}
+
 }
 
 int NCriaNovoUtilizador(TCHAR *login, TCHAR *pass)
@@ -815,11 +838,11 @@ int NEnviarMensagemPrivada(TCHAR *msg)
 /*Enviar a mensagem a todos os utilizadores online.*/
 void NEnviarMensagemPública(TCHAR *msg)
 {
-		if (!WriteFile(hPipeComunicacao, msg, _tcslen(msg)*sizeof(TCHAR), &n, NULL)) {
-			//_tperror(TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"));
-			MessageBox(NULL, TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"), TEXT("ERRO"), MB_OK);
-			exit(1);
-		}
+	if (!WriteFile(hPipeComunicacao, msg, _tcslen(msg)*sizeof(TCHAR), &n, NULL)) {
+		//_tperror(TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"));
+		MessageBox(NULL, TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"), TEXT("ERRO"), MB_OK);
+		exit(1);
+	}
 
 
 	//MENSAGEM outgoing;
@@ -836,7 +859,7 @@ janelas de conversa pública e privada.*/
 //{
 //
 //}
-	
+
 /*Recebe informação autonomamente que é enviada pelo servidor e
 acrescenta no fundo da janela de conversa pública.*/
 //MENSAGEM NLerMensagensPublicas()
