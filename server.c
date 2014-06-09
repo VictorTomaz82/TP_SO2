@@ -75,10 +75,10 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 //==========================================================
 //				Cria novo utilizador
 //Fomato no regedit:
-//		NOME -> Indica o utilizaodr o valor do utilizador é a pass
-//		T_NOME -> Tipo do utilizaod
-//		E_NOME	-> Nome do utilizador
-//Retorn 1 se for bem sucedido
+//		NOME -> Indica o utilizador o valor do utilizador é a pass
+//		T_NOME -> Tipo do utilizador
+//		E_NOME	-> Estado do utilizador
+//Retorna 1 se for bem sucedido
 //ou 0 caso contrario
 //==========================================================
 
@@ -87,9 +87,9 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 	DWORD queAconteceu;
 	DWORD versao, tamanho;
 	DWORD NRUseres = 0;
-	char charBUF[10];
-	LPCSTR buf;
-
+	TCHAR charBufT[10]=TEXT("_T_");
+	TCHAR charBufE[10]=TEXT("_E_");
+	TCHAR buf;
 
 	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE,TEXT("Software\\SO2Chat\\Utilizadores"),0, NULL, 
 		REG_OPTION_NON_VOLATILE, //Fica mesmo apos fechar o programa
@@ -101,37 +101,43 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 		_tprintf(TEXT("Erro ao criar/abrir chave\n"));
 	else
 		//Se a chave foi criada, inicializar os valores
+
+		//concatena strings
+		lstrcatW(charBufT,user->login);
+		lstrcatW(charBufE,user->login);
+
 		if(queAconteceu == REG_CREATED_NEW_KEY){
 
 			_tprintf(TEXT("Chave: HKEY_LOCAL_MACHINE\\Software\\SO2Chat\\Utilizadores criada\n"));
 
-			RegSetValueEx(chave, (LPCSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
-
+			RegSetValueEx(chave, &user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
 			
-			sprintf(charBUF,"T_%s",user->login); 
-			buf = charBUF;
-			RegSetValueEx(chave, buf, 0, REG_DWORD, (BYTE *)&user->tipo,sizeof(DWORD));
+			RegSetValueEx(chave,charBufT, 0, REG_DWORD, (BYTE *)&user->tipo,sizeof(DWORD));
 
-			sprintf(charBUF,"E_%s",user->login); 
-			buf = charBUF;
-			RegSetValueEx(chave, buf, 0, REG_DWORD, (BYTE *)&user->estado,sizeof(DWORD));
+			RegSetValueEx(chave,charBufE, 0, REG_DWORD, (BYTE *)&user->estado,sizeof(DWORD));
 
+			_tprintf(TEXT("Utilizador %s adicionado\n"),user->login);
 
 
 		}else if(queAconteceu == REG_OPENED_EXISTING_KEY){
 
-			RegSetValueEx(chave, (LPCSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
+			RegSetValueEx(chave, &user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
 
-			sprintf(charBUF,"T_%s",user->login); 
-			buf = charBUF;
-			RegSetValueEx(chave, buf, 0, REG_DWORD, (BYTE *)&user->tipo,sizeof(DWORD));
+			RegSetValueEx(chave,charBufT, 0, REG_DWORD, (BYTE *)&user->tipo,sizeof(DWORD));
 
-			sprintf(charBUF,"E_%s",user->login); 
-			buf = charBUF;
-			RegSetValueEx(chave, buf, 0, REG_DWORD, (BYTE *)&user->estado,sizeof(DWORD));
+			RegSetValueEx(chave,charBufE, 0, REG_DWORD, (BYTE *)&user->estado,sizeof(DWORD));
 
 
-			_tprintf(TEXT("Utilizador %s adicionado\n"),user->login);
+			//sprintf((char*)charBUF,"T_%s",user->login); 
+			//buf = (LPCWSTR)charBUF;
+			//RegSetValueEx(chave, charBUF, 0, REG_DWORD, (BYTE *)&user->tipo,sizeof(DWORD));
+
+			//sprintf((char*)charBUF,"E_%s",user->login); 
+			//buf = (LPCWSTR)charBUF;
+			//RegSetValueEx(chave, charBUF, 0, REG_DWORD, (BYTE *)&user->estado,sizeof(DWORD));
+
+
+			_tprintf(TEXT("Utilizador %s já existia\n"),user->login);
 
 			//Falta ainda os parametros do tipo e do estado
 		}
@@ -148,30 +154,35 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 boolean AutenticaUtilizador(UTILIZADOR *user){
 	HKEY chave;
 	UTILIZADOR TEMP[1];
-	TCHAR LOGINTEMP[TAMLOGIN];
-	int NR = TAMLOGIN;
-	LPCSTR nome;
+	TCHAR  pass[TAMPASS];
+	//DWORD tamanho = TAMPASS;
 
-
+	//abre a chave
 	if( RegOpenKeyEx(HKEY_LOCAL_MACHINE,TEXT("Software\\SO2Chat\\Utilizadores"),0,KEY_READ,&chave) == ERROR_SUCCESS){
-		nome = user->login;
-		if(RegQueryValueEx(chave, nome, NULL, NULL, (byte *)LOGINTEMP, (LPDWORD)&NR) == ERROR_SUCCESS){
 
-			if(strcmp(LOGINTEMP,user->password) != 1){
-				_tprintf(TEXT("[OK] %s atenticado.\n"),nome);
+		//procura utilizador
+		if(RegQueryValueEx(chave, user->login, NULL, NULL, NULL, NULL) == ERROR_SUCCESS){
+		
+			//if(RegQueryValueEx(chave, user->login, NULL, NULL, (byte *)LOGINTEMP, (LPDWORD)&NR) == ERROR_SUCCESS){
+
+			_tprintf(TEXT(" %s =? %s.\n"),pass,user->password);
+
+			if(!lstrcmpW(pass,user->password)){
+			//if(strcmp((const char*)LOGINTEMP,(const char*)user->password) != 1){
+				_tprintf(TEXT("[OK] %s atenticado.\n"),user->login);
 				return 1;
 			}else{
-				_tprintf(TEXT("[NOTOK] %s Password errada.\n"),nome);
+				_tprintf(TEXT("[NOTOK] %s Password errada.\n"),user->login);
 				return 0;
 			}
 
 		}else {
-			_tprintf(TEXT("[NOTOK] %s não existe na BD.\n"),nome);
+			_tprintf(TEXT("[NOTOK] %s não existe na BD.\n"),user->login);
 			return 0;
 		}
 
 	}else{
-		_tprintf(TEXT("[ERRO] Erro a abrir a Key dos utilizadores.\n"));
+		_tprintf(TEXT("[ERRO] Erro a abrir a Key do utilizador.\n"));
 		return 0;
 	}
 };
