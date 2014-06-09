@@ -70,6 +70,7 @@ BOOL CALLBACK DialogAcerca(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam);
 void printChat(HWND hWnd);
 DWORD WINAPI TFuncEnvioPublico( LPVOID lpParam );
 DWORD WINAPI TFuncEnvioPrivado( LPVOID lpParam );
+DWORD WINAPI EscutaDifusao(LPVOID param);
 
 //Arrays de estrutura UTILIZADOR
 UTILIZADOR users[NUMUTILIZADORES];
@@ -260,6 +261,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 		SelectObject(memdc, hbrush);
 		PatBlt(memdc, 0, 0, maxX, maxY, PATCOPY);
 		ReleaseDC(hWnd, hdc);
+
+		//lança thread escuta difusao
+		CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)EscutaDifusao, (LPVOID)hWnd, 0, NULL);
+
 
 	//parte de comunicaçao
 
@@ -717,6 +722,30 @@ DWORD WINAPI TFuncEnvioPrivado( LPVOID lpParam )
 	NEnviarMensagemPrivada((TCHAR*)lpParam);
 }
 
+DWORD WINAPI EscutaDifusao(LPVOID param)
+{
+	HWND hWnd= (HWND)param;
+	TCHAR buf[256];
+	BOOL ret = FALSE;
+	HDC hdc;
+	//ciclo infinito
+	while(1){
+		hdc = GetDC(hWnd);
+		ret = ReadFile(hPipeDifusao, buf, sizeof(buf), &n, NULL);
+		buf[n / sizeof(TCHAR)] = '\0';								//mudei aqui
+		if (!ret || !n){
+			MessageBox(NULL, TEXT("[ERRO] Ler do pipe... (ReadFile)\n"), TEXT("ERRO"), MB_OK);
+			exit(1);
+		}
+
+				//for (; _tcscmp(mychat.publicas[linha].texto, TEXT("")); linha++){
+		TextOut(hdc, 0, linha * 20, buf, _tcslen(buf));
+		TextOut(memdc, 0, linha* 20, buf, _tcslen(buf));
+				//}
+		ReleaseDC(hWnd, hdc);
+	}
+
+}
 
 
 //=====================================================FUNÇOES DO DLL=======================================================
@@ -786,6 +815,18 @@ int NEnviarMensagemPrivada(TCHAR *msg)
 /*Enviar a mensagem a todos os utilizadores online.*/
 void NEnviarMensagemPública(TCHAR *msg)
 {
+		if (!WriteFile(hPipeComunicacao, msg, _tcslen(msg)*sizeof(TCHAR), &n, NULL)) {
+			//_tperror(TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"));
+			MessageBox(NULL, TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"), TEXT("ERRO"), MB_OK);
+			exit(1);
+		}
+
+
+	//MENSAGEM outgoing;
+	//wcscpy_s(outgoing.texto,msg);
+
+	//MessageBox(NULL, outgoing.texto, TEXT("teste"), MB_OK);
+
 
 }
 

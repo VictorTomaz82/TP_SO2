@@ -45,7 +45,7 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 	_tprintf(TEXT("[SERVIDOR-%d] Um cliente ligou-se...\n"),GetCurrentThreadId());
 	while (1) {
 		ret = ReadFile(hPipe, buf, sizeof(buf), &n, NULL);
-		buf[n / sizeof(TCHAR)*2] = '\0';
+		buf[n / sizeof(TCHAR)] = '\0';
 		if (!ret || !n)
 			break;
 		_tprintf(TEXT("[SERVIDOR-%d] Recebi %d bytes: '%s'... (ReadFile)\n"), GetCurrentThreadId(), n, buf);
