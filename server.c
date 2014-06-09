@@ -19,13 +19,6 @@
 #define PIPE_NAME TEXT("\\\\.\\pipe\\comunicacao")
 #define PIPE_NAME2 TEXT("\\\\.\\pipe\\difusao")
 
-//Vai estar na dll
-//typedef struct{
-//	TCHAR login[TAMLOGIN], password[TAMPASS];
-//	int tipo; //1-utilizador 2-admin
-//	int estado; //0-livre 1-ocupado numa conversa privada
-//}UTILIZADOR;
-
 
 HANDLE hPipesDifusao[NCLIENTES]={NULL};
 int total=0; //total de utilizadores ja registados
@@ -33,6 +26,10 @@ int total=0; //total de utilizadores ja registados
 //prototipos
 void Cleanup(PSID pEveryoneSID, PSID pAdminSID, PACL pACL, PSECURITY_DESCRIPTOR pSD);
 void ErrorExit(LPTSTR lpszFunction);
+
+SYSTEMTIME st;
+
+
 
 
 DWORD WINAPI AtendeCliente(LPVOID param){
@@ -42,6 +39,8 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 	int i;
 	int resposta;
 	HANDLE hPipe = (HANDLE) param;
+
+
 
 	_tprintf(TEXT("[SERVIDOR-%d] Um cliente ligou-se...\n"),GetCurrentThreadId());
 	while (1) {
@@ -88,7 +87,7 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 	DWORD versao, tamanho;
 	DWORD NRUseres = 0;
 	TCHAR charBuf[10] = TEXT("U");
-	TCHAR charBufE[10]=TEXT("_E_");
+	TCHAR DateBufE[15] = TEXT("00/00/0000");
 	TCHAR buf;
 
 	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE,TEXT("Software\\SO2Chat\\Utilizadores"),0, NULL, 
@@ -104,52 +103,37 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 
 		//concatena strings
 		lstrcatW(charBuf,user->login);
-		//lstrcatW(charBufE,user->login);
+	//lstrcatW(charBufE,user->login);
 
-		if(queAconteceu == REG_CREATED_NEW_KEY){
+	if(queAconteceu == REG_CREATED_NEW_KEY){
 
-			_tprintf(TEXT("Chave: HKEY_LOCAL_MACHINE\\Software\\SO2Chat\\Utilizadores criada\n"));
+		_tprintf(TEXT("Chave: HKEY_LOCAL_MACHINE\\Software\\SO2Chat\\Utilizadores criada\n"));
 
-			//RegSetValueEx(chave, &user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
-			
-			//RegSetValueEx(chave,charBufT, 0, REG_DWORD, (BYTE *)&user->tipo,sizeof(DWORD));
+		GetLocalTime(&st); //obtem data e hora actual
 
-			//RegSetValueEx(chave,charBufE, 0, REG_DWORD, (BYTE *)&user->estado,sizeof(DWORD));
-
-			RegSetValueEx(chave,charBuf,0,REG_BINARY,(LPBYTE)user,sizeof(user));
-			
-			_tprintf(TEXT("Utilizador %s adicionado\n"),user->login);
+		_stprintf(DateBufE,TEXT("%d/%d/%d"), st.wDay, st.wMonth, st.wYear); 
+		lstrcatW(user->DataRegisto,DateBufE);
 
 
-		}else if(queAconteceu == REG_OPENED_EXISTING_KEY){
+		RegSetValueEx(chave,charBuf,0,REG_BINARY,(LPBYTE)user,sizeof(UTILIZADOR));
 
-			
-			
-			RegSetValueEx(chave,charBuf,0,REG_BINARY,(LPBYTE)user,sizeof(UTILIZADOR));
-			 
-
-			//RegSetValueEx(chave, &user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
-
-			//RegSetValueEx(chave,charBufT, 0, REG_DWORD, (BYTE *)&user->tipo,sizeof(DWORD));
-
-			//RegSetValueEx(chave,charBufE, 0, REG_DWORD, (BYTE *)&user->estado,sizeof(DWORD));
+		_tprintf(TEXT("Utilizador %s adicionado\n"),user->login);
 
 
-			//sprintf((char*)charBUF,"T_%s",user->login); 
-			//buf = (LPCWSTR)charBUF;
-			//RegSetValueEx(chave, charBUF, 0, REG_DWORD, (BYTE *)&user->tipo,sizeof(DWORD));
+	}else if(queAconteceu == REG_OPENED_EXISTING_KEY){
 
-			//sprintf((char*)charBUF,"E_%s",user->login); 
-			//buf = (LPCWSTR)charBUF;
-			//RegSetValueEx(chave, charBUF, 0, REG_DWORD, (BYTE *)&user->estado,sizeof(DWORD));
+		_stprintf(DateBufE,TEXT("%d/%d/%d"), st.wDay, st.wMonth, st.wYear); 
+		lstrcatW(user->DataRegisto,DateBufE);
+
+		RegSetValueEx(chave,charBuf,0,REG_BINARY,(LPBYTE)user,sizeof(UTILIZADOR));
 
 
-			_tprintf(TEXT("Utilizador %s já existia\n"),user->login);
+		_tprintf(TEXT("Utilizador %s já existia\n"),user->login);
 
-			//Falta ainda os parametros do tipo e do estado
-		}
+		//Falta ainda os parametros do tipo e do estado
+	}
 
-		return 0;
+	return 0;
 };
 
 //================================================
@@ -161,23 +145,32 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 boolean AutenticaUtilizador(UTILIZADOR *user){
 	HKEY chave;
 	UTILIZADOR TEMP[1] = {NULL,NULL,NULL,NULL};
+	TCHAR DateBufE[15] = TEXT("00/00/0000");
 	TCHAR  pass[TAMPASS];
 	DWORD  TAM = sizeof(UTILIZADOR);
 
 
-	TCHAR charBuf[10] = TEXT("U");
+	TCHAR charBuf[15] = TEXT("U");
 
 	lstrcatW(charBuf,user->login);
 	//Open KEY
 	if( RegOpenKeyEx(HKEY_LOCAL_MACHINE,TEXT("Software\\SO2Chat\\Utilizadores"),0,KEY_READ,&chave) == ERROR_SUCCESS){
 
 		//Find User
-		if(RegQueryValueEx(chave, TEXT("UAdmin"), NULL, NULL, (LPBYTE)&TEMP, &TAM) == ERROR_SUCCESS){
-			
+		
+		if(RegQueryValueEx(chave, charBuf, NULL, NULL, (LPBYTE)&TEMP, &TAM) == ERROR_SUCCESS){
+
 
 			_tprintf(TEXT(" %s =? %s.\n"),user->password,TEMP->password);
 
 			if(!lstrcmpW(TEMP->password,user->password)){
+
+
+				GetLocalTime(&st); //obtem data e hora actual
+
+				_stprintf(DateBufE,TEXT("%d/%d/%d"), st.wDay, st.wMonth, st.wYear); 
+				lstrcatW(user->DataRegisto,DateBufE);
+
 
 				_tprintf(TEXT("[OK] %s atenticado.\n"),user->login);
 				return 1;
@@ -235,9 +228,10 @@ void main(void) {
 	//Tenho de enviar os dados em separado
 	for (i = 0; i < 2; i++){
 		CriaNovoUtilizador(&novo[i]);
+		AutenticaUtilizador(&novo[i]);
 	}
 
-	AutenticaUtilizador(&novo[0]);
+	
 
 
 
