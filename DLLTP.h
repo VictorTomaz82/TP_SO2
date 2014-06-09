@@ -32,8 +32,9 @@
 
 	typedef struct{
 		TCHAR login[TAMLOGIN], password[TAMPASS];
-		short int tipo; //1-utilizador 2-admin
-		short int estado; //0-livre 1-ocupado numa conversa privada
+		int tipo; //1-utilizador 2-admin
+		int estado; //0-livre 1-ocupado numa conversa privada
+		//Não pode ser short se não no regedit da problemas
 	}UTILIZADOR;
 
 	typedef struct{

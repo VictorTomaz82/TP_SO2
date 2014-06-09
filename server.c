@@ -72,17 +72,23 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 }
 
 
-//Cria novo utilizador
+//==========================================================
+//				Cria novo utilizador
+//Fomato no regedit:
+//		NOME -> Indica o utilizaodr o valor do utilizador é a pass
+//		T_NOME -> Tipo do utilizaod
+//		E_NOME	-> Nome do utilizador
 //Retorn 1 se for bem sucedido
 //ou 0 caso contrario
+//==========================================================
+
 boolean CriaNovoUtilizador(UTILIZADOR *user){
 	HKEY chave;
 	DWORD queAconteceu;
 	DWORD versao, tamanho;
 	DWORD NRUseres = 0;
-	TCHAR buf[6];
-	char charBUF[6];
-
+	char charBUF[10];
+	LPCSTR buf;
 
 
 	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE,TEXT("Software\\SO2Chat\\Utilizadores"),0, NULL, 
@@ -99,41 +105,76 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 
 			_tprintf(TEXT("Chave: HKEY_LOCAL_MACHINE\\Software\\SO2Chat\\Utilizadores criada\n"));
 
-			//RegSetValueEx(chave, TEXT("Total_utilizadores"), 0, REG_SZ, (LPBYTE) TEXT("Jorge"), _tcslen(TEXT("Jorge"))*sizeof(TCHAR));
+			RegSetValueEx(chave, (LPCSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
 
-			NRUseres = 1;
+			
+			sprintf(charBUF,"T_%s",user->login); 
+			buf = charBUF;
+			RegSetValueEx(chave, buf, 0, REG_DWORD, (BYTE *)&user->tipo,sizeof(DWORD));
+
+			sprintf(charBUF,"E_%s",user->login); 
+			buf = charBUF;
+			RegSetValueEx(chave, buf, 0, REG_DWORD, (BYTE *)&user->estado,sizeof(DWORD));
 
 
-			RegSetValueEx(chave, TEXT("TotalUsers"), 0, REG_DWORD, (LPBYTE)&NRUseres, sizeof(DWORD));
-
-			RegSetValueEx(chave, (LPCWSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
-
-			_tprintf(TEXT("Utilizador %s adicionado\n"),&user->login);
 
 		}else if(queAconteceu == REG_OPENED_EXISTING_KEY){
 
+			RegSetValueEx(chave, (LPCSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
 
+			sprintf(charBUF,"T_%s",user->login); 
+			buf = charBUF;
+			RegSetValueEx(chave, buf, 0, REG_DWORD, (BYTE *)&user->tipo,sizeof(DWORD));
 
-
-			RegSetValueEx(chave, (LPCWSTR)&user->login, 0, REG_SZ, (LPBYTE)&user->password,  sizeof(TCHAR)*(sizeof(user->password)));
-
-			//			NRUseres = RegQueryValueEx(chave, TEXT("TotalUsers"), NULL, NULL, (LPBYTE)NRUseres, &NRUseres);
-			//		NRUseres++;
-			//	RegSetValueEx(chave, TEXT("TotalUsers"), 0, REG_DWORD, (LPBYTE)&NRUseres, sizeof(DWORD));
-
-
+			sprintf(charBUF,"E_%s",user->login); 
+			buf = charBUF;
+			RegSetValueEx(chave, buf, 0, REG_DWORD, (BYTE *)&user->estado,sizeof(DWORD));
 
 
 			_tprintf(TEXT("Utilizador %s adicionado\n"),user->login);
-			_tprintf(TEXT("Existem %d Utilizadores\n"),NRUseres);
+
 			//Falta ainda os parametros do tipo e do estado
-
-
 		}
 
 		return 0;
 };
 
+//================================================
+//				Autentica utilizador
+//	Retorna 1 se estiver OK
+//	User e pass
+//	Caso NotOK retorna 0
+//================================================
+boolean AutenticaUtilizador(UTILIZADOR *user){
+	HKEY chave;
+	UTILIZADOR TEMP[1];
+	TCHAR LOGINTEMP[TAMLOGIN];
+	int NR = TAMLOGIN;
+	LPCSTR nome;
+
+
+	if( RegOpenKeyEx(HKEY_LOCAL_MACHINE,TEXT("Software\\SO2Chat\\Utilizadores"),0,KEY_READ,&chave) == ERROR_SUCCESS){
+		nome = user->login;
+		if(RegQueryValueEx(chave, nome, NULL, NULL, (byte *)LOGINTEMP, (LPDWORD)&NR) == ERROR_SUCCESS){
+
+			if(strcmp(LOGINTEMP,user->password) != 1){
+				_tprintf(TEXT("[OK] %s atenticado.\n"),nome);
+				return 1;
+			}else{
+				_tprintf(TEXT("[NOTOK] %s Password errada.\n"),nome);
+				return 0;
+			}
+
+		}else {
+			_tprintf(TEXT("[NOTOK] %s não existe na BD.\n"),nome);
+			return 0;
+		}
+
+	}else{
+		_tprintf(TEXT("[ERRO] Erro a abrir a Key dos utilizadores.\n"));
+		return 0;
+	}
+};
 
 
 
@@ -156,8 +197,8 @@ void main(void) {
 
 	//Estrutura teste
 	UTILIZADOR novo[3]= {
-		{TEXT("Admin"),TEXT("admin"),0,0},
-		{ TEXT("ZE"),TEXT("ZE"),0,0}
+		{TEXT("Admin"),TEXT("admin"),1,1},
+		{ TEXT("ZE"),TEXT("ZE"),1,1}
 	};
 
 
@@ -174,6 +215,8 @@ void main(void) {
 	for (i = 0; i < 2; i++){
 		CriaNovoUtilizador(&novo[i]);
 	}
+
+	AutenticaUtilizador(&novo[0]);
 
 
 
