@@ -7,7 +7,7 @@
 
 #include "resource.h"
 #include "DLLTP.h"
-#define TAM 255
+//#define TAM 255
 
 //definir o nome dos named pipes
 #define PIPE_NAME TEXT("\\\\.\\pipe\\comunicacao")
@@ -23,7 +23,7 @@ int NDesligarConversa();
 int NEnviarMensagemPrivada(TCHAR *msg);
 void NEnviarMensagemPública(TCHAR *msg);	
 //CHAT NLerInformacaoInicial();
-//MENSAGEM NLerMensagensPublicas();
+void NLerMensagensPublicas();
 //MENSAGEM NLerMensagensPrivadas();
 int NSair();
 int NDesligar();
@@ -33,7 +33,7 @@ int NDesligar();
 // WinMain(). "hInstance" é necessária no bloco WinProc() para lançar a Dialog
 // box em DialogBox(...) 
 HINSTANCE hInstance;	
-int linha = 2;
+int linha = 0;
 
 //dados para usar no pipe
 DWORD n;
@@ -67,7 +67,7 @@ BOOL CALLBACK DialogMessgPublica(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lP
 BOOL CALLBACK DialogAcerca(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam);
 
 //Declaração de funcões auxilaires
-void printChat(HWND hWnd);
+//void printChat(HWND hWnd);
 DWORD WINAPI TFuncEnvioPublico( LPVOID lpParam );
 DWORD WINAPI TFuncEnvioPrivado( LPVOID lpParam );
 DWORD WINAPI EscutaDifusao(LPVOID param);
@@ -301,7 +301,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 		}
 
 		//imprime o chat
-		printChat(hWnd);
+		//printChat(hWnd);
 		LerInformacaoInicial();
 
 		//cria listbox
@@ -342,7 +342,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 			GetSystemTime(&hora);			
 			DialogBox(hInstance, (LPCWSTR)IDD_DIALOG2, hWnd, (DLGPROC)DialogAutenticacao);
 			//imprime o chat
-			printChat(hWnd);
+			//printChat(hWnd);
 			break;
 					  }
 		case ID_UTILIZADORES:
@@ -484,7 +484,9 @@ INT CALLBACK DialogAutenticacao(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPa
 {	
 	TCHAR login[TAMLOGIN], passwd[TAMPASS], mensagem[TAMTEXTO];
 	int i;
+	DWORD dwThreadId;
 	MENSAGEM ultima;
+	TCHAR msg[256];
 	int resposta=0;
 
 
@@ -511,8 +513,18 @@ INT CALLBACK DialogAutenticacao(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPa
 				wcsncpy_s(userActual,TAMLOGIN,login,TAMLOGIN);
 				
 				MessageBox(hWnd, TEXT("Aceite"), TEXT("Login"), MB_OK);
-				//EnviarMensagemPública(TEXT("Olá"));
-				ultima = LerMensagensPublicas();
+
+				//constroi a mensagem "olá" pque envia ao chat global
+				_stprintf_s(msg,TAMTEXTO, TEXT("%s|GLOBAL|Olá"), userActual);	
+				MessageBox(hWnd, msg, TEXT("TESTE"), MB_OK);	
+
+				//chama a funçao NLerMensagensPublicas
+				NLerMensagensPublicas();
+
+				//cria uma thread que comunica com o server
+				CreateThread(NULL,0,TFuncEnvioPublico,msg,0,&dwThreadId);
+
+				//ultima = LerMensagensPublicas();
 				EndDialog(hWnd, 0);
 			}
 			else
@@ -598,15 +610,19 @@ BOOL CALLBACK DialogMessgPublica(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lP
 		return 1;
 
 	case WM_INITDIALOG:
-		ultima = LerMensagensPublicas();
-		_stprintf_s(str, 2 * TAMTEXTO, TEXT("(%02d/%02d/%d-%02d:%02d:%02d) %s"), ultima.instante.dia,
-			ultima.instante.mes, ultima.instante.ano, ultima.instante.hora,
-			ultima.instante.minuto, ultima.instante.segundo, ultima.texto);
-		SetDlgItemText(hWnd, IDC_LIDA, str);
+		//ultima = LerMensagensPublicas();
+
+		//////
+
+		//_stprintf_s(str, 2 * TAMTEXTO, TEXT("(%02d/%02d/%d-%02d:%02d:%02d) %s"), ultima.instante.dia,
+		//	ultima.instante.mes, ultima.instante.ano, ultima.instante.hora,
+		//	ultima.instante.minuto, ultima.instante.segundo, ultima.texto);
+		//SetDlgItemText(hWnd, IDC_LIDA, str);
 		return 1;
 
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDOK){
+			
 			//constroi a mensagem
 			GetDlgItemText(hWnd, IDC_ENVIADA, str, TAMTEXTO);
 			_stprintf_s(msg,TAMTEXTO, TEXT("%s|GLOBAL|%s"), userActual,str);	
@@ -700,27 +716,27 @@ BOOL CALLBACK DialogAcerca(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam){
 }
 
 //FUNÇÕES AUXILIARES E DE LANÇAMENTO DE THREADS
-void printChat(HWND hWnd){
-
-	TCHAR str[2 * TAMTEXTO];
-	HDC hdc;
-
-
-	if (linha == 0){ //Se ainda não apresentou informação inicial
-		mychat = LerInformacaoInicial();
-		hdc = GetDC(hWnd);
-
-		for (; _tcscmp(mychat.publicas[linha].texto, TEXT("")); linha++){
-			_stprintf_s(str, 2 * TAMTEXTO, TEXT("[%02d:%02d:%02d - %02d/%02d/%d] %s"), mychat.publicas[linha].instante.hora,
-				mychat.publicas[linha].instante.minuto, mychat.publicas[linha].instante.segundo, mychat.publicas[linha].instante.dia,
-				mychat.publicas[linha].instante.mes, mychat.publicas[linha].instante.ano, mychat.publicas[linha].texto);
-			TextOut(hdc, 0, linha * 20, str, _tcslen(str));
-			TextOut(memdc, 0, linha * 20, str, _tcslen(str));
-		}
-		ReleaseDC(hWnd, hdc);
-	}
-
-}
+//void printChat(HWND hWnd){
+//
+//	TCHAR str[2 * TAMTEXTO];
+//	HDC hdc;
+//
+//
+//	if (linha == 0){ //Se ainda não apresentou informação inicial
+//		mychat = LerInformacaoInicial();
+//		hdc = GetDC(hWnd);
+//
+//		for (; _tcscmp(mychat.publicas[linha].texto, TEXT("")); linha++){
+//			_stprintf_s(str, 2 * TAMTEXTO, TEXT("[%02d:%02d:%02d - %02d/%02d/%d] %s"), mychat.publicas[linha].instante.hora,
+//				mychat.publicas[linha].instante.minuto, mychat.publicas[linha].instante.segundo, mychat.publicas[linha].instante.dia,
+//				mychat.publicas[linha].instante.mes, mychat.publicas[linha].instante.ano, mychat.publicas[linha].texto);
+//			TextOut(hdc, 0, linha * 20, str, _tcslen(str));
+//			TextOut(memdc, 0, linha * 20, str, _tcslen(str));
+//		}
+//		ReleaseDC(hWnd, hdc);
+//	}
+//
+//}
 
 DWORD WINAPI TFuncEnvioPublico( LPVOID lpParam ) 
 { 
@@ -751,6 +767,7 @@ DWORD WINAPI EscutaDifusao(LPVOID param)
 		//for (; _tcscmp(mychat.publicas[linha].texto, TEXT("")); linha++){
 		TextOut(hdc, 0, linha * 20, buf, _tcslen(buf));
 		TextOut(memdc, 0, linha* 20, buf, _tcslen(buf));
+		linha++;
 		//}
 		ReleaseDC(hWnd, hdc);
 	}
@@ -902,11 +919,11 @@ janelas de conversa pública e privada.*/
 
 /*Recebe informação autonomamente que é enviada pelo servidor e
 acrescenta no fundo da janela de conversa pública.*/
-//MENSAGEM NLerMensagensPublicas()
-//{
-//
-//
-//}
+void NLerMensagensPublicas()
+{
+
+
+}
 
 /*Recebe informação autonomamente que é enviada pelo servidor e
 acrescenta no fundo da janela de conversa privada.*/

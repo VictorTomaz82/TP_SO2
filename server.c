@@ -11,10 +11,17 @@
 #include <aclapi.h>
 #include <strsafe.h>
 
-#define TAMLOGIN 15
-#define TAMPASS 15
-#define TAMTEXTO 100
+//#define TAMLOGIN 15
+//#define TAMPASS 15
+//#define TAMTEXTO 100
 
+//estrutura onde esta a info do chat global
+CHATGLOBAL serverChat;
+int linhas=0;
+//HANDLE para o mutex que lida com o acesso ao serverChat
+HANDLE mutex;
+//HANDLE para o semaforo
+//HANDLE semaforo;
 
 #define NCLIENTES 30
 #define PIPE_NAME TEXT("\\\\.\\pipe\\comunicacao")
@@ -69,11 +76,11 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 		//}
 
 		emissor = _tcstok( buf, separators);
-		_tprintf(_T("Token: %s\n"),emissor);
+		_tprintf(_T("Emissor: %s\n"),emissor);
 		comando = _tcstok(NULL,separators);
-		_tprintf(_T("Token: %s\n"),comando);
+		_tprintf(_T("Comando: %s\n"),comando);
 		texto = _tcstok(NULL,separators);
-		_tprintf(_T("Token: %s\n"),texto);
+		_tprintf(_T("Texto: %s\n"),texto);
 
 		if(lstrcmpW(comando, TEXT("GLOBAL"))==0)
 		{
@@ -82,9 +89,37 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 			GetLocalTime(&st);
 
 			//constroi a string de output
-			_stprintf_s(out,TAMTEXTO, TEXT("%s (%02d:%02d:%02d - %02d/%02d/%d): %s"),emissor, st.wHour,st.wMinute, st.wSecond, st.wDay,st.wMonth, st.wYear, texto);			
+			_stprintf_s(out,TAMTEXTO, TEXT("(%02d/%02d/%04d - %02d:%02d:%02d) [%s]: %s"), st.wDay,st.wMonth, st.wYear,st.wHour,st.wMinute, st.wSecond,emissor, texto);			
 			resposta=_tcslen(out)*sizeof(TCHAR);
 
+			//==============================adicionar a mensagem ao serverChat=======================
+
+			//Espera pelo semaforo
+			//WaitForSingleObject(semaforo,INFINITE);
+
+			//Para obter o direito de usar estrutura serverChat global
+			WaitForSingleObject(mutex,INFINITE);
+
+			wcsncpy_s(serverChat.publicas[linhas].login,TAMLOGIN,emissor,TAMLOGIN);
+			
+			serverChat.publicas[linhas].instante.dia=st.wDay;
+			serverChat.publicas[linhas].instante.mes=st.wMonth;
+			serverChat.publicas[linhas].instante.ano=st.wYear;
+			serverChat.publicas[linhas].instante.hora=st.wHour;
+			serverChat.publicas[linhas].instante.minuto=st.wMinute;
+			serverChat.publicas[linhas].instante.segundo=st.wSecond;
+
+			wcsncpy_s(serverChat.publicas[linhas++].texto,TAMTEXTO,texto,TAMTEXTO);
+
+			//Liberta mutex
+			ReleaseMutex(mutex);
+			//Liberta semaforo
+			//ReleaseSemaphore(semaforo,1,NULL);
+
+			//==============================fim_adicionar a mensagem ao serverChat=======================
+
+			//debug only
+			_tprintf(_T("Linhas de mensagens guardadas: %d\n"),linhas);
 
 			//divulgar informação a todos 
 			for(i=0;i<total;i++)
@@ -269,6 +304,13 @@ void main(void) {
 	_setmode(_fileno(stdin), _O_WTEXT); 
 	_setmode(_fileno(stdout), _O_WTEXT); 
 #endif
+
+	//mecanismos de sincronizaçãp
+	// Cria mutex inicialmente livre
+	mutex=CreateMutex(NULL,FALSE,NULL);
+
+	// Cria semaforo com 2 unidades
+	//semaforo=CreateSemaphore(NULL,1,1,NULL);
 
 
 	//Teste de criar utilizador e salvar no regedit

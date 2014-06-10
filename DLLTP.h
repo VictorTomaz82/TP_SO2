@@ -44,8 +44,9 @@
 	}DATA;
 
 	typedef struct{
-		TCHAR texto[TAMTEXTO];
+		TCHAR login[TAMLOGIN];
 		DATA instante;
+		TCHAR texto[TAMTEXTO];		
 	}MENSAGEM;
 
 
@@ -91,7 +92,7 @@
 	DLL_IMP_API CHAT LerInformacaoInicial();
 	/* Recebe toda informação histórica necessária para apresentação nas
 	janelas de conversa pública e privada.*/
-	DLL_IMP_API	MENSAGEM LerMensagensPublicas();
+	//DLL_IMP_API	MENSAGEM LerMensagensPublicas();
 	/*Recebe informação autonomamente que é enviada pelo servidor e
 	acrescenta no fundo da janela de conversa pública.*/
 	DLL_IMP_API MENSAGEM LerMensagensPrivadas();
