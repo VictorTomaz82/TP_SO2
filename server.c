@@ -45,6 +45,8 @@ boolean CriaNovoUtilizador(UTILIZADOR *user);
 //estrutura temporal
 SYSTEMTIME st;
 
+int SESSAO = 1;
+
 DWORD WINAPI AtendeCliente(LPVOID param){
 	BOOL ret = FALSE;
 	TCHAR buf[256];
@@ -155,7 +157,7 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 			}else{
 				_tprintf(TEXT("OK OK\n"));
 
-
+				SESSAO = 1;
 				
 				///////////////////////////////////////
 				
@@ -213,6 +215,17 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 		else if(lstrcmpW(comando, TEXT("LISTAONLINE"))==0)
 		{
 			WriteFile(hPipe, buf, _tcslen(buf)*sizeof(TCHAR), &n, NULL);
+
+		}else if(lstrcmpW(comando, TEXT("Valida"))==0)
+		{
+			Sleep(600);
+			if(SESSAO == 1){
+				_stprintf_s(buf,sizeof(TCHAR)*2,TEXT("OK"));
+			WriteFile(hPipe, buf, _tcslen(buf)*sizeof(TCHAR), &n, NULL);
+			}else{
+				_stprintf_s(buf,sizeof(TCHAR)*2,TEXT("NOTOK"));
+			WriteFile(hPipe, buf, _tcslen(buf)*sizeof(TCHAR), &n, NULL);
+			}
 
 		}
 

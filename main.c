@@ -782,13 +782,13 @@ int NAutenticar(TCHAR *login, TCHAR *pass)
 
 	TCHAR msg[256];
 	DWORD dwThreadId;
-	
+	int ret;
 	TCHAR passActual1[TAMPASS];
 
 	wcsncpy_s(userActual,TAMLOGIN,(TCHAR *)login,TAMLOGIN);
 					
 	//recebe lista Utilizadores online
-	NLerListaUtilizadores();
+	//NLerListaUtilizadores();
 
 	
 	wcsncpy_s(passActual1,TAMPASS,(TCHAR *)pass,TAMPASS);
@@ -798,6 +798,16 @@ int NAutenticar(TCHAR *login, TCHAR *pass)
 	CreateThread(NULL,0,TFuncEnvioPublico,msg,0,&dwThreadId);
 	//cria uma thread que comunica com o server
 	Sleep(600); //tem de ser se não o pipe arrebenta
+
+	
+	ret = ValidaLogin();
+
+	if(ret == 1){
+		MessageBox(NULL, TEXT("Bem vindo!\n"), TEXT("Login OK"), MB_OK);
+	}else{
+		MessageBox(NULL, TEXT("Utilizado ou PWD errada!\n"), TEXT("ERRO Login"), MB_OK);
+	}
+
 	return 0;
 
 }
@@ -843,6 +853,32 @@ int NLerListaUtilizadores()
 
 	return 0;
 }
+
+
+int ValidaLogin(){
+	TCHAR buf[256];
+	BOOL ret = FALSE;
+
+
+	_stprintf_s(buf,TAMTEXTO, TEXT("%s|Valida| "),userActual);
+
+		if (!WriteFile(hPipeComunicacao, buf, _tcslen(buf)*sizeof(TCHAR), &n, NULL)) {
+		//_tperror(TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"));
+		MessageBox(NULL, TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"), TEXT("ERRO"), MB_OK);
+		exit(1);
+	}
+
+		//recebe resposta do server
+		ret = ReadFile(hPipeComunicacao, buf, sizeof(buf), &n, NULL);
+		MessageBox(NULL, buf, TEXT("ERRO"), MB_OK);
+		if(lstrcmpW(buf,TEXT("OK")) == 0){
+			return 1;
+		}else
+			return 0;
+
+
+}
+
 
 /*Opcional, só para saber que utilizadores existem e quais são os seus detalhes*/
 int NLerListaUtilizadoresRegistados(UTILIZADOR *utilizadores)
