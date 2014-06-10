@@ -86,7 +86,7 @@
 	/*Enviar a mensagem ao utilizador com quem mantemos a conversa
 	privada. Caso o utilizador destinatário já tenha desligado (ou este)
 	esta conversa, a função devolve um código de erro.*/
-	DLL_IMP_API void EnviarMensagemPública(TCHAR *msg);
+	//DLL_IMP_API void EnviarMensagemPública(TCHAR *msg);
 	/*Enviar a mensagem a todos os utilizadores online.*/
 	DLL_IMP_API CHAT LerInformacaoInicial();
 	/* Recebe toda informação histórica necessária para apresentação nas

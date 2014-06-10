@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <windows.h>
+#include <string.h>
 
 #include "DLLTP.h"
 
@@ -27,19 +28,25 @@ int total=0; //total de utilizadores ja registados
 void Cleanup(PSID pEveryoneSID, PSID pAdminSID, PACL pACL, PSECURITY_DESCRIPTOR pSD);
 void ErrorExit(LPTSTR lpszFunction);
 
+//estrutura temporal
 SYSTEMTIME st;
-
-
-
 
 DWORD WINAPI AtendeCliente(LPVOID param){
 	BOOL ret = FALSE;
 	TCHAR buf[256];
+	TCHAR out[256];
 	DWORD n;
 	int i;
 	int resposta;
 	HANDLE hPipe = (HANDLE) param;
 
+	//necessario para o tokenizer
+	TCHAR separators[]   = _T("|");
+	TCHAR *emissor;
+	TCHAR *comando;
+	TCHAR *texto;
+	//TCHAR * token;
+	//int Col = 0;
 
 
 	_tprintf(TEXT("[SERVIDOR-%d] Um cliente ligou-se...\n"),GetCurrentThreadId());
@@ -48,16 +55,57 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 		buf[n / sizeof(TCHAR)] = '\0';
 		if (!ret || !n)
 			break;
-		_tprintf(TEXT("[SERVIDOR-%d] Recebi %d bytes: '%s'... (ReadFile)\n"), GetCurrentThreadId(), n, buf);
-		resposta=_tcslen(buf)*sizeof(TCHAR);
-		WriteFile(hPipe,&resposta,sizeof(int),&n,NULL);
+		_tprintf(TEXT("[Thread %d]  enviou %d bytes: '%s'... (ReadFile)\n"), GetCurrentThreadId(), n, buf);
 
-		//divulgar informação a todos 
-		for(i=0;i<total;i++)
+		//recebeu comando - mais vale aqui ler sempre o mm numero de tokens
+
+		//formato normal
+		//token = _tcstok( buf, separators);
+		//while( token != NULL )
+		//{
+
+		//    _tprintf(_T("Token: %s\n"),token);
+		//    token = _tcstok(NULL,separators);
+		//}
+
+		emissor = _tcstok( buf, separators);
+		_tprintf(_T("Token: %s\n"),emissor);
+		comando = _tcstok(NULL,separators);
+		_tprintf(_T("Token: %s\n"),comando);
+		texto = _tcstok(NULL,separators);
+		_tprintf(_T("Token: %s\n"),texto);
+
+		if(lstrcmpW(comando, TEXT("GLOBAL"))==0)
 		{
-			if(hPipesDifusao[i]!=NULL)
-				WriteFile(hPipesDifusao[i],buf,resposta,&n,NULL);
+			//se for mensagem global
+			//prepara estrutura de mensagem para difundir
+			GetLocalTime(&st);
+
+			//constroi a string de output
+			_stprintf_s(out,TAMTEXTO, TEXT("%s (%02d:%02d:%02d - %02d/%02d/%d): %s"),emissor, st.wHour,st.wMinute, st.wSecond, st.wDay,st.wMonth, st.wYear, texto);			
+			resposta=_tcslen(out)*sizeof(TCHAR);
+
+
+			//divulgar informação a todos 
+			for(i=0;i<total;i++)
+			{
+				if(hPipesDifusao[i]!=NULL)
+					WriteFile(hPipesDifusao[i],out,resposta,&n,NULL);
+			}
 		}
+		else if(lstrcmpW(comando, TEXT("AUTENTICACAO"))==0)
+		{
+			//se for para validar credenciais
+			//////////////
+		}
+		else if(lstrcmpW(comando, TEXT("CRIANOVO"))==0)
+		{
+			//se for pra criar novo user
+			/////////////
+		}
+
+		//retorna no pipe de comunicaçao o numero de bytes recebidos
+		WriteFile(hPipe,&resposta,sizeof(int),&n,NULL);
 
 	}
 	_tprintf(TEXT("[SERVIDOR-%d] Vou desligar o pipe... (DisconnectNamedPipe/CloseHandle)\n"), GetCurrentThreadId());
@@ -157,7 +205,7 @@ boolean AutenticaUtilizador(UTILIZADOR *user){
 	if( RegOpenKeyEx(HKEY_LOCAL_MACHINE,TEXT("Software\\SO2Chat\\Utilizadores"),0,KEY_READ,&chave) == ERROR_SUCCESS){
 
 		//Find User
-		
+
 		if(RegQueryValueEx(chave, charBuf, NULL, NULL, (LPBYTE)&TEMP, &TAM) == ERROR_SUCCESS){
 
 
@@ -189,7 +237,6 @@ boolean AutenticaUtilizador(UTILIZADOR *user){
 		return 0;
 	}
 };
-
 
 
 void main(void) {
@@ -230,9 +277,6 @@ void main(void) {
 		CriaNovoUtilizador(&novo[i]);
 		AutenticaUtilizador(&novo[i]);
 	}
-
-	
-
 
 
 	pSD = (PSECURITY_DESCRIPTOR) LocalAlloc(LPTR,SECURITY_DESCRIPTOR_MIN_LENGTH);
@@ -289,8 +333,6 @@ void main(void) {
 			break;
 		}
 
-
-
 		_tprintf(TEXT("[SERVIDOR] Esperar ligação de um cliente... (ConnectNamedPipe)\n"));
 		if(!ConnectNamedPipe(hPipe, NULL)){
 			_tperror(TEXT("Erro na ligação ao cliente!"));
@@ -306,14 +348,11 @@ void main(void) {
 			break;
 		}
 
-
-
 		_tprintf(TEXT("[SERVIDOR] Esperar ligação de um cliente... (ConnectNamedPipe)\n"));
 		if(!ConnectNamedPipe(hPipesDifusao[total], NULL)){
 			_tperror(TEXT("Erro na ligação ao cliente!"));
 			exit(-1);
 		}
-
 
 
 		//Lançar thread
