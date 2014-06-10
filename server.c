@@ -147,8 +147,8 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 			//texto
 			
 			
-			_stprintf_s(TEMP->login,15,emissor);
-			_stprintf_s(TEMP->password,15,texto);
+			_stprintf_s(TEMP->login,TAMLOGIN,emissor);
+			_stprintf_s(TEMP->password,TAMPASS,texto);
 			
 			//Vamos autenticar se for com sucesso envia a confirmação ao cliente
 			if(!AutenticaUtilizador(&TEMP[0])){
@@ -218,19 +218,17 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 
 		}else if(lstrcmpW(comando, TEXT("Valida"))==0)
 		{
-			Sleep(600);
+			//Sleep(600);
 			if(SESSAO == 1){
-				_stprintf_s(buf,sizeof(TCHAR)*2,TEXT("OK"));
-			WriteFile(hPipe, buf, _tcslen(buf)*sizeof(TCHAR), &n, NULL);
+				_stprintf_s(out,TAMTEXTO,TEXT("OK"));
 			}else{
-				_stprintf_s(buf,sizeof(TCHAR)*2,TEXT("NOTOK"));
-			WriteFile(hPipe, buf, _tcslen(buf)*sizeof(TCHAR), &n, NULL);
+				_stprintf_s(out,TAMTEXTO,TEXT("NOTOK"));		
 			}
-
+			WriteFile(hPipe, out, _tcslen(out)*sizeof(TCHAR), &n, NULL);
 		}
 
-		//retorna no pipe de comunicaçao o numero de bytes recebidos
-		WriteFile(hPipe,&resposta,sizeof(int),&n,NULL);
+		////retorna no pipe de comunicaçao o numero de bytes recebidos
+		//WriteFile(hPipe,&resposta,sizeof(int),&n,NULL);
 
 	}
 	_tprintf(TEXT("[SERVIDOR-%d] Vou desligar o pipe... (DisconnectNamedPipe/CloseHandle)\n"), GetCurrentThreadId());

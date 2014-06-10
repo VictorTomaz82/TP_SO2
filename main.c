@@ -805,7 +805,7 @@ int NAutenticar(TCHAR *login, TCHAR *pass)
 	if(ret == 1){
 		MessageBox(NULL, TEXT("Bem vindo!\n"), TEXT("Login OK"), MB_OK);
 	}else{
-		MessageBox(NULL, TEXT("Utilizado ou PWD errada!\n"), TEXT("ERRO Login"), MB_OK);
+		MessageBox(NULL, TEXT("Utilizador ou PWD errada!\n"), TEXT("ERRO Login"), MB_OK);
 	}
 
 	return 0;
@@ -849,7 +849,7 @@ int NLerListaUtilizadores()
 
 		//recebe resposta do server
 		ret = ReadFile(hPipeComunicacao, buf, sizeof(buf), &n, NULL);
-		MessageBox(NULL, buf, TEXT("ERRO"), MB_OK);
+		MessageBox(NULL, buf, TEXT("Recebido do server"), MB_OK);
 
 	return 0;
 }
@@ -870,8 +870,8 @@ int ValidaLogin(){
 
 		//recebe resposta do server
 		ret = ReadFile(hPipeComunicacao, buf, sizeof(buf), &n, NULL);
-		MessageBox(NULL, buf, TEXT("ERRO"), MB_OK);
-		if(lstrcmpW(buf,TEXT("OK")) == 0){
+		MessageBox(NULL, buf, TEXT("Validaçao do server"), MB_OK);
+		if(lstrcmpW(buf,TEXT("OK|Valida| ")) == 0){
 			return 1;
 		}else
 			return 0;
