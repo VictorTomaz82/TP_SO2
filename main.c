@@ -616,7 +616,7 @@ BOOL CALLBACK DialogMessgPublica(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lP
 
 BOOL CALLBACK DialogGerir(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 {	
-	TCHAR login[30], passwd[30], mensagem[100];
+	TCHAR login[15], passwd[15], mensagem[100];
 	int i;
 	MENSAGEM ultima;
 	switch (messg){
@@ -640,9 +640,11 @@ BOOL CALLBACK DialogGerir(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 
 		case IDOK:
 
-			GetDlgItemText(hWnd, IDC_EDIT1, login, 30);
-			GetDlgItemText(hWnd, IDC_EDIT2, passwd, 30);
+			GetDlgItemText(hWnd, IDC_EDIT1, login, 15);
+			GetDlgItemText(hWnd, IDC_EDIT2, passwd, 15);
 			//falta adicionar na base de dados
+			//JG
+			NCriaNovoUtilizador(login,passwd);
 
 			return 1;
 		case IDC_LIST1:
@@ -764,7 +766,8 @@ int NAutenticar(TCHAR *login, TCHAR *pass)
 
 	/*for(i=0;i<3;i++){
 	WriteFile(hPipeComunicacao, (LPCVOID)&Autentica[i], (lstrlen((LPCWSTR)&Autentica)+1)*sizeof(MENSAGEM), &n, NULL);
-	Sleep(200);
+	
+	Sleep(200); //Espera o Servidor tratar a msg
 	}*/
 	WriteFile(hPipeComunicacao, lpszWriteNA, (lstrlen(lpszWriteNA)+1)*sizeof(TCHAR), &n, NULL);
 
@@ -787,7 +790,31 @@ int NCriaNovoUtilizador(TCHAR *login, TCHAR *pass)
 	//verifica se existe o login no registo
 	//caso nao haja acrescenta a info
 
-	return 0;
+	MENSAGEM Autentica[3] = {{TEXT("Regista"),NULL},
+	{(TCHAR)login,NULL},
+	{(TCHAR)pass,NULL}};
+	MENSAGEM buf[1];
+
+
+	LPTSTR lpszWriteCNU = TEXT("NOVO UTILIZADOR");
+	/*for(i=0;i<3;i++){
+	WriteFile(hPipeComunicacao, (LPCVOID)&Autentica[i], (lstrlen((LPCWSTR)&Autentica)+1)*sizeof(MENSAGEM), &n, NULL);
+	Sleep(200);
+	}*/
+	WriteFile(hPipeComunicacao, lpszWriteCNU, (lstrlen(lpszWriteCNU)+1)*sizeof(TCHAR), &n, NULL);
+
+	
+	ReadFile(hPipeComunicacao, buf, sizeof(buf), &n, NULL);
+
+	if(buf->texto == TEXT("OK")){
+		//variavel de autenticação a TRUE
+		//Utilizador Adicionado
+		return 1;
+	}else{
+		//variavel de autenticação a FALSE
+		
+		return 0;
+	}
 }
 
 
@@ -885,6 +912,12 @@ int NSair()
 /* Envia o pedido de encerramento do sistema ao servidor. */
 int NDesligar()
 {
+	LPTSTR lpszWriteND = TEXT("Shutdown");
+	/*for(i=0;i<3;i++){
+	WriteFile(hPipeComunicacao, (LPCVOID)&Autentica[i], (lstrlen((LPCWSTR)&Autentica)+1)*sizeof(MENSAGEM), &n, NULL);
+	Sleep(200);
+	}*/
+	WriteFile(hPipeComunicacao, lpszWriteND, (lstrlen(lpszWriteND)+1)*sizeof(TCHAR), &n, NULL);
 
 	return 0;
 }
