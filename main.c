@@ -219,9 +219,9 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 
 	while (GetMessage(&lpMsg,NULL,0,0)) {	
 		if(!TranslateAccelerator(hWnd, hAccel, &lpMsg)){
-		TranslateMessage(&lpMsg);		// Pré-processamento da mensagem
-		DispatchMessage(&lpMsg);		// Enviar a mensagem traduzida de volta ao Windows
-	}
+			TranslateMessage(&lpMsg);		// Pré-processamento da mensagem
+			DispatchMessage(&lpMsg);		// Enviar a mensagem traduzida de volta ao Windows
+		}
 	}									
 	return((int)lpMsg.wParam);	// Status = Parâmetro "wParam" da estrutura "lpMsg"
 }
@@ -514,27 +514,12 @@ INT CALLBACK DialogAutenticacao(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPa
 			GetDlgItemText(hWnd, IDC_EDIT1, login, TAMLOGIN);
 			GetDlgItemText(hWnd, IDC_EDIT2, passwd, TAMPASS);
 			GetDlgItemText(hWnd, IDC_EDIT3, ip, TAMIP);
-			
+
 			//falta validaçao do ip aqui
 
-			if (!NAutenticar(login, passwd)){
-				
-				//coloca a variavel global com o valor do user loggado
-				wcsncpy_s(userActual,TAMLOGIN,login,TAMLOGIN);
-				
-				MessageBox(hWnd, TEXT("Aceite"), TEXT("Login"), MB_OK);
+			if (!NAutenticar((TCHAR*)login, (TCHAR*)passwd)){
+				//Falta receber a resposta e validar se tem acesso ou nao
 
-				//constroi a mensagem "olá" pque envia ao chat global
-				_stprintf_s(msg,TAMTEXTO, TEXT("%s|GLOBAL|Olá"), userActual);	
-				MessageBox(hWnd, msg, TEXT("TESTE"), MB_OK);	
-
-				//chama a funçao NLerMensagensPublicas
-				NLerMensagensPublicas();
-
-				//cria uma thread que comunica com o server
-				CreateThread(NULL,0,TFuncEnvioPublico,msg,0,&dwThreadId);
-
-				//ultima = LerMensagensPublicas();
 				EndDialog(hWnd, 0);
 			}
 			else
@@ -632,7 +617,7 @@ BOOL CALLBACK DialogMessgPublica(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lP
 
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDOK){
-			
+
 			//constroi a mensagem
 			GetDlgItemText(hWnd, IDC_ENVIADA, str, TAMTEXTO);
 			_stprintf_s(msg,TAMTEXTO, TEXT("%s|GLOBAL|%s"), userActual,str);	
@@ -679,8 +664,8 @@ BOOL CALLBACK DialogGerir(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 			GetDlgItemText(hWnd, IDC_EDIT1, login, TAMLOGIN);
 			GetDlgItemText(hWnd, IDC_EDIT2, passwd, TAMPASS);
 			//falta adicionar na base de dados
-			//JG
-			NCriaNovoUtilizador(login,passwd);
+
+			NCriaNovoUtilizador((TCHAR *)login,(TCHAR *)passwd);
 
 			return 1;
 		case IDC_LIST1:
@@ -750,6 +735,7 @@ BOOL CALLBACK DialogAcerca(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam){
 
 DWORD WINAPI TFuncEnvioPublico( LPVOID lpParam ) 
 { 
+	//MessageBox(NULL, TEXT("Função chama MSG publica\n"), TEXT("ERRO"), MB_OK);
 	NEnviarMensagemPública((TCHAR*)lpParam);
 }
 
@@ -792,35 +778,21 @@ Esta função retorna a validação (sucesso ou insucesso) e ainda se o
 utilizador em causa é administrador.*/
 int NAutenticar(TCHAR *login, TCHAR *pass)
 {
-	int i = 0;
-	int ret = 0;
-	MENSAGEM Autentica[3] = {{TEXT("Autentica"),NULL},
-	{(TCHAR)login,NULL},
-	{(TCHAR)pass,NULL}};
-	MENSAGEM buf[1];
 
-	//tive que comentar este teste por causa do novo formato de mensagem
+	TCHAR msg[256];
+	DWORD dwThreadId;
+	TCHAR userActual1[TAMLOGIN];
+	TCHAR passActual1[TAMPASS];
 
-	//LPTSTR lpszWriteNA = TEXT("TESTE NAutentica");
-
-	/*for(i=0;i<3;i++){
-	WriteFile(hPipeComunicacao, (LPCVOID)&Autentica[i], (lstrlen((LPCWSTR)&Autentica)+1)*sizeof(MENSAGEM), &n, NULL);
-	
-	Sleep(200); //Espera o Servidor tratar a msg
-	}*/
-	//WriteFile(hPipeComunicacao, lpszWriteNA, (lstrlen(lpszWriteNA)+1)*sizeof(TCHAR), &n, NULL);
-
-	//ret = ReadFile(hPipeComunicacao, buf, sizeof(buf), &n, NULL);
-
-	if(buf->texto == TEXT("OK")){
-		//variavel de autenticação a TRUE
-		SESSAO = 1;
-		return 1;
-	}else{
-		//variavel de autenticação a FALSE
-		SESSAO = 0;
-		return 0;
-	}
+	wcsncpy_s(userActual1,TAMLOGIN,(TCHAR *)login,TAMLOGIN);
+	wcsncpy_s(passActual1,TAMPASS,(TCHAR *)pass,TAMPASS);
+	_stprintf_s(msg,TAMTEXTO, TEXT("%s|A|%s"),(TCHAR *)userActual1,(TCHAR *)passActual1);
+		
+	//MessageBox(NULL, TEXT("Cria a Thread\n"), TEXT("ERRO"), MB_OK);
+	CreateThread(NULL,0,TFuncEnvioPublico,msg,0,&dwThreadId);
+	//cria uma thread que comunica com o server
+	Sleep(600); //tem de ser se não o pipe arrebenta
+	return 0;
 
 }
 
@@ -828,33 +800,19 @@ int NCriaNovoUtilizador(TCHAR *login, TCHAR *pass)
 {
 	//verifica se existe o login no registo
 	//caso nao haja acrescenta a info
+	TCHAR msg[255];
+	DWORD dwThreadId;
+	TCHAR userActual1[TAMLOGIN];
+	TCHAR passActual1[TAMPASS];
 
-	MENSAGEM Autentica[3] = {{TEXT("Regista"),NULL},
-	{(TCHAR)login,NULL},
-	{(TCHAR)pass,NULL}};
-	MENSAGEM buf[1];
+	wcsncpy_s(userActual1,TAMLOGIN,(TCHAR *)login,TAMLOGIN);
+	wcsncpy_s(passActual1,TAMPASS,(TCHAR *)pass,TAMPASS);
+	_stprintf_s(msg,TAMTEXTO, TEXT("%s|C|%s"),(TCHAR *)userActual1,(TCHAR *)passActual1);
 
-	//tive que comentar por causa do novo formato de mensagem
-
-	//LPTSTR lpszWriteCNU = TEXT("NOVO UTILIZADOR");
-	/*for(i=0;i<3;i++){
-	WriteFile(hPipeComunicacao, (LPCVOID)&Autentica[i], (lstrlen((LPCWSTR)&Autentica)+1)*sizeof(MENSAGEM), &n, NULL);
-	Sleep(200);
-	}*/
-	//WriteFile(hPipeComunicacao, lpszWriteCNU, (lstrlen(lpszWriteCNU)+1)*sizeof(TCHAR), &n, NULL);
-
-	
-	//ReadFile(hPipeComunicacao, buf, sizeof(buf), &n, NULL);
-
-	if(buf->texto == TEXT("OK")){
-		//variavel de autenticação a TRUE
-		//Utilizador Adicionado
-		return 1;
-	}else{
-		//variavel de autenticação a FALSE
-		
+	CreateThread(NULL,0,TFuncEnvioPublico,msg,0,&dwThreadId);
+	Sleep(600); //tem de ser se não o pipe arrebenta
 		return 0;
-	}
+	
 }
 
 
@@ -905,6 +863,8 @@ int NEnviarMensagemPrivada(TCHAR *msg)
 /*Enviar a mensagem a todos os utilizadores online.*/
 void NEnviarMensagemPública(TCHAR *msg)
 {
+	//MessageBox(NULL, TEXT("Escreve no PiPe de comunicação\n"), TEXT("ERRO"), MB_OK);
+	
 	if (!WriteFile(hPipeComunicacao, msg, _tcslen(msg)*sizeof(TCHAR), &n, NULL)) {
 		//_tperror(TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"));
 		MessageBox(NULL, TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"), TEXT("ERRO"), MB_OK);

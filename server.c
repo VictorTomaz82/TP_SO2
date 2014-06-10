@@ -34,6 +34,8 @@ int total=0; //total de utilizadores ja registados
 //prototipos
 void Cleanup(PSID pEveryoneSID, PSID pAdminSID, PACL pACL, PSECURITY_DESCRIPTOR pSD);
 void ErrorExit(LPTSTR lpszFunction);
+boolean AutenticaUtilizador(UTILIZADOR *user);
+boolean CriaNovoUtilizador(UTILIZADOR *user);
 
 //estrutura temporal
 SYSTEMTIME st;
@@ -52,12 +54,15 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 	TCHAR *emissor;
 	TCHAR *comando;
 	TCHAR *texto;
+	UTILIZADOR TEMP[] = {NULL};
+	UTILIZADOR TEMP1[] = {NULL};
 	//TCHAR * token;
 	//int Col = 0;
 
 
 	_tprintf(TEXT("[SERVIDOR-%d] Um cliente ligou-se...\n"),GetCurrentThreadId());
 	while (1) {
+		_tprintf(_T("Vamos ler no pipe\n"));
 		ret = ReadFile(hPipe, buf, sizeof(buf), &n, NULL);
 		buf[n / sizeof(TCHAR)] = '\0';
 		if (!ret || !n)
@@ -119,7 +124,7 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 			//==============================fim_adicionar a mensagem ao serverChat=======================
 
 			//debug only
-			_tprintf(_T("Linhas de mensagens guardadas: %d\n"),linhas);
+			_tprintf(TEXT("Linhas de mensagens guardadas: %d\n"),linhas);
 
 			//divulgar informação a todos 
 			for(i=0;i<total;i++)
@@ -128,15 +133,43 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 					WriteFile(hPipesDifusao[i],out,resposta,&n,NULL);
 			}
 		}
-		else if(lstrcmpW(comando, TEXT("AUTENTICACAO"))==0)
+		else if(lstrcmpW(comando, TEXT("A"))==0)
 		{
-			//se for para validar credenciais
-			//////////////
+			//validar credenciais
+			//emissor
+			//texto
+			
+			
+			_stprintf_s(TEMP->login,15,emissor);
+			_stprintf_s(TEMP->password,15,texto);
+			
+			//Vamos autenticar se for com sucesso envia a confirmação ao cliente
+			if(!AutenticaUtilizador(&TEMP[0])){
+				_tprintf(TEXT("NOK NOK\n"));
+			}else{
+				_tprintf(TEXT("OK OK\n"));
+			}
+
+
 		}
-		else if(lstrcmpW(comando, TEXT("CRIANOVO"))==0)
+		else if(lstrcmpW(comando, TEXT("C"))==0)
 		{
-			//se for pra criar novo user
-			/////////////
+			
+			//validar credenciais
+			//emissor
+			//texto
+			
+			_tprintf(_T("Criar utilizador\n"));
+			_stprintf_s(TEMP1->login,TAMLOGIN,emissor);
+			_stprintf_s(TEMP1->password,TAMPASS,texto);
+			////criar novo user
+			CriaNovoUtilizador(&TEMP1[0]);
+			Sleep(600);
+			//if(!){
+			//	_tprintf(_T("NOK NOK"));
+			//}else{
+			//	_tprintf(_T("OK OK"));
+			//}
 		}
 
 		//retorna no pipe de comunicaçao o numero de bytes recebidos
@@ -202,7 +235,7 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 
 		_tprintf(TEXT("Utilizador %s adicionado\n"),user->login);
 
-
+		return 1; //OK
 	}else if(queAconteceu == REG_OPENED_EXISTING_KEY){
 
 		_stprintf(DateBufE,TEXT("%d/%d/%d"), st.wDay, st.wMonth, st.wYear); 
@@ -213,10 +246,10 @@ boolean CriaNovoUtilizador(UTILIZADOR *user){
 
 		_tprintf(TEXT("Utilizador %s já existia\n"),user->login);
 
-		//Falta ainda os parametros do tipo e do estado
+		return 0; //NotOK
 	}
 
-	return 0;
+	
 };
 
 //================================================
