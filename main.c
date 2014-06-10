@@ -16,7 +16,7 @@
 //=======================================================================declaraçoes temporarias
 int NAutenticar(TCHAR *login, TCHAR *pass);
 int NCriaNovoUtilizador(TCHAR *login, TCHAR *pass);
-int NLerListaUtilizadores(UTILIZADOR *utilizadores);
+int NLerListaUtilizadores();
 int NLerListaUtilizadoresRegistados(UTILIZADOR *utilizadores);
 int NIniciarConversa(TCHAR *utilizador);
 int NDesligarConversa();	
@@ -75,7 +75,8 @@ DWORD WINAPI EscutaDifusao(LPVOID param);
 //Arrays de estrutura UTILIZADOR
 UTILIZADOR users[NUMUTILIZADORES];
 int total;
-UTILIZADOR online[NUMUTILIZADORES];
+//UTILIZADOR online[NUMUTILIZADORES];
+TCHAR utilizadoresOnline[NUMUTILIZADORES][TAMLOGIN];
 int totalonline;
 CHAT mychat;
 TCHAR userActual[TAMLOGIN];
@@ -155,7 +156,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	}
 
 	//instancia o pipe
-	hPipeComunicacao = CreateFile(PIPE_NAME, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	hPipeComunicacao = CreateFile(PIPE_NAME, PIPE_ACCESS_DUPLEX, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hPipeComunicacao==NULL) {
 		MessageBox(NULL, TEXT("Erro ao instanciar o pipe de comunicacao!"), TEXT("ERRO!"), MB_OK);
 		//exit(1);
@@ -311,15 +312,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 
 		//preenche a lista com os utilizadores online
 		for (i = 0; i < totalonline; i++){
-			SendDlgItemMessage(hWndList, NULL, LB_ADDSTRING, 0, (LPARAM)online[i].login);
+			//SendDlgItemMessage(hWndList, NULL, LB_ADDSTRING, 0, (LPARAM)online[i].login);
 		}
 		total = NLerListaUtilizadoresRegistados(users);
 
 	case WM_PAINT:
 		//actualiza a listbox da main window
-		totalonline = NLerListaUtilizadores(online);
+		//totalonline = NLerListaUtilizadores(online);
 		for (i = 0; i < totalonline; i++){
-			SendDlgItemMessage(hWnd, IDC_LIST1, LB_ADDSTRING, 0, (LPARAM)online[i].login);
+			//SendDlgItemMessage(hWnd, IDC_LIST1, LB_ADDSTRING, 0, (LPARAM)online[i].login);
 		}
 		//"pinta" a mainwindow
 		hdc = BeginPaint(hWnd, &PtStc);
@@ -584,9 +585,9 @@ BOOL CALLBACK DialogUtilizadores(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lP
 		return 1;
 
 	case WM_INITDIALOG:
-		totalonline = NLerListaUtilizadores(online);
+		//totalonline = NLerListaUtilizadores(online);
 		for (i = 0; i < totalonline; i++){
-			SendDlgItemMessage(hWnd, IDC_LIST1, LB_ADDSTRING, 0, (LPARAM)online[i].login);
+			//SendDlgItemMessage(hWnd, IDC_LIST1, LB_ADDSTRING, 0, (LPARAM)online[i].login);
 		}
 		return 1;
 	}
@@ -785,6 +786,10 @@ int NAutenticar(TCHAR *login, TCHAR *pass)
 	TCHAR passActual1[TAMPASS];
 
 	wcsncpy_s(userActual,TAMLOGIN,(TCHAR *)login,TAMLOGIN);
+					
+	//recebe lista Utilizadores online
+	NLerListaUtilizadores();
+
 	
 	wcsncpy_s(passActual1,TAMPASS,(TCHAR *)pass,TAMPASS);
 	_stprintf_s(msg,TAMTEXTO, TEXT("%s|A|%s"),(TCHAR *)userActual,(TCHAR *)passActual1);
@@ -819,8 +824,22 @@ int NCriaNovoUtilizador(TCHAR *login, TCHAR *pass)
 
 /* Recebe (por argumento) informação actualizada de forma autónoma
 sobre os jogadores online.*/
-int NLerListaUtilizadores(UTILIZADOR *utilizadores)
+int NLerListaUtilizadores()
 {
+	TCHAR buf[256];
+	BOOL ret = FALSE;
+
+	_stprintf_s(buf,TAMTEXTO, TEXT("%s|LISTAONLINE| "),userActual);
+
+		if (!WriteFile(hPipeComunicacao, buf, _tcslen(buf)*sizeof(TCHAR), &n, NULL)) {
+		//_tperror(TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"));
+		MessageBox(NULL, TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"), TEXT("ERRO"), MB_OK);
+		exit(1);
+	}
+
+		//recebe resposta do server
+		ret = ReadFile(hPipeComunicacao, buf, sizeof(buf), &n, NULL);
+		MessageBox(NULL, buf, TEXT("ERRO"), MB_OK);
 
 	return 0;
 }

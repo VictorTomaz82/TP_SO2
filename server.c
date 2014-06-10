@@ -29,6 +29,9 @@ HANDLE mutex;
 #define PIPE_NAME TEXT("\\\\.\\pipe\\comunicacao")
 #define PIPE_NAME2 TEXT("\\\\.\\pipe\\difusao")
 
+//
+TCHAR utilizadoresOnline[NCLIENTES][TAMLOGIN];
+
 
 HANDLE hPipesDifusao[NCLIENTES]={NULL};
 int total=0; //total de utilizadores ja registados
@@ -148,8 +151,20 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 			//Vamos autenticar se for com sucesso envia a confirmação ao cliente
 			if(!AutenticaUtilizador(&TEMP[0])){
 				_tprintf(TEXT("NOK NOK\n"));
+
 			}else{
 				_tprintf(TEXT("OK OK\n"));
+
+
+				
+				///////////////////////////////////////
+				
+				wcsncpy_s(utilizadoresOnline[total],TAMLOGIN,TEMP->login,TAMLOGIN);
+				_tprintf(TEXT("Ultimo user logado: %s\n"),utilizadoresOnline[total]);
+				_tprintf(TEXT("Numero de utilizadores online: %d\n"),total);
+				///////////////////////////////////////
+
+
 			}
 
 
@@ -193,6 +208,12 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 			_tprintf(_T("Shutdown Servidor...\n"));
 			Sleep(1500);
 			exit(EXIT_SUCCESS);
+		}
+
+		else if(lstrcmpW(comando, TEXT("LISTAONLINE"))==0)
+		{
+			WriteFile(hPipe, buf, _tcslen(buf)*sizeof(TCHAR), &n, NULL);
+
 		}
 
 		//retorna no pipe de comunicaçao o numero de bytes recebidos
