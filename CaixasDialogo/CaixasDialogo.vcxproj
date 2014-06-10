@@ -98,7 +98,9 @@
     <Image Include="CaixasDialogo\comment_private.ico" />
     <Image Include="CaixasDialogo\user_group.ico" />
     <Image Include="chat.ico" />
+    <Image Include="comment_private.ico" />
     <Image Include="key.ico" />
+    <Image Include="user_group.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

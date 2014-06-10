@@ -2,6 +2,7 @@
 #include <tchar.h>
 #define TAMLOGIN 15
 #define TAMPASS 15
+#define TAMIP 16
 #define TAMTEXTO 100
 #define NUMMSGSPUBLICAS 30
 #define NUMMSGSPRIVADAS 30

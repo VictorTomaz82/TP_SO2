@@ -43,6 +43,12 @@
     <Image Include="CaixasDialogo\comment_private.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="user_group.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="comment_private.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\main.c">

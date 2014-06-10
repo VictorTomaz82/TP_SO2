@@ -18,12 +18,14 @@
 #define IDC_LIST2                       1008
 #define IDC_EDIT1                       1009
 #define IDC_EDIT2                       1010
-#define FOTO                            1022
+#define FOTO                            1021
 #define ID_FOTO                         1022
 #define IDC_LIDA                        1023
 #define IDC_ENVIADA                     1024
 #define IDC_PVT_EDIT                    1026
 #define IDC_PVT_SEND                    1027
+#define IDC_EDIT3                       1029
+#define IDIP                            1028
 #define IDR_ACCELERATOR1                7000
 #define IDR_MENU1                       7001
 #define ID_CLIENTES                     40001
@@ -46,7 +48,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        122
 #define _APS_NEXT_COMMAND_VALUE         40019
-#define _APS_NEXT_CONTROL_VALUE         1027
+#define _APS_NEXT_CONTROL_VALUE         1029
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

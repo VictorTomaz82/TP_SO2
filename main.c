@@ -338,8 +338,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 		switch (LOWORD(wParam)) 
 		{				
 		case ID_LOGIN:{
-			SYSTEMTIME hora;
-			GetSystemTime(&hora);			
+
+			//SYSTEMTIME hora;
+			//GetSystemTime(&hora);			
 			DialogBox(hInstance, (LPCWSTR)IDD_DIALOG2, hWnd, (DLGPROC)DialogAutenticacao);
 			//imprime o chat
 			//printChat(hWnd);
@@ -482,20 +483,25 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 // ============================================================================
 INT CALLBACK DialogAutenticacao(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
 {	
-	TCHAR login[TAMLOGIN], passwd[TAMPASS], mensagem[TAMTEXTO];
+	TCHAR login[TAMLOGIN], passwd[TAMPASS], mensagem[TAMTEXTO],ip[TAMIP];
 	int i;
 	DWORD dwThreadId;
 	MENSAGEM ultima;
 	TCHAR msg[256];
 	int resposta=0;
+	HWND hEdit;
 
 
 	//====================== ciclo de interpretação de eventos
 
 	switch (messg){
 
+		//SetDlgItemText(hWnd,IDC_EDIT3,TEXT("127.0.0.1"));
+
+
 	case WM_COMMAND: //Clicou num controlo
 		switch (LOWORD(wParam)){ //Que controlo?
+
 		case IDCANCEL:
 
 			EndDialog(hWnd, -1);			
@@ -506,7 +512,11 @@ INT CALLBACK DialogAutenticacao(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPa
 			//Comparar com admin admin : em C++ ==, em C _tcscmp(str1,str2)
 
 			GetDlgItemText(hWnd, IDC_EDIT1, login, TAMLOGIN);
-			GetDlgItemText(hWnd, IDC_EDIT2, passwd, TAMPASS);				
+			GetDlgItemText(hWnd, IDC_EDIT2, passwd, TAMPASS);
+			GetDlgItemText(hWnd, IDC_EDIT3, ip, TAMIP);
+			
+			//falta validaçao do ip aqui
+
 			if (!NAutenticar(login, passwd)){
 				
 				//coloca a variavel global com o valor do user loggado
