@@ -11,6 +11,8 @@
 #include <aclapi.h>
 #include <strsafe.h>
 
+#include <stdlib.h>
+
 //#define TAMLOGIN 15
 //#define TAMPASS 15
 //#define TAMTEXTO 100
@@ -170,6 +172,27 @@ DWORD WINAPI AtendeCliente(LPVOID param){
 			//}else{
 			//	_tprintf(_T("OK OK"));
 			//}
+		}else if(lstrcmpW(comando, TEXT("EXIT"))==0) //EXIT
+		{
+			
+			GetLocalTime(&st);
+
+			//constroi a string de output
+			_stprintf_s(out,TAMTEXTO, TEXT("(%02d/%02d/%04d - %02d:%02d:%02d) [SERVIDOR]: O Servidor foi desligado pelo Administrador."), st.wDay,st.wMonth, st.wYear,st.wHour,st.wMinute );			
+			resposta=_tcslen(out)*sizeof(TCHAR);
+
+
+			//Resposta vai ser a informação que o servidor vai desligar
+			
+			for(i=0;i<total;i++)
+			{
+				if(hPipesDifusao[i]!=NULL)
+					WriteFile(hPipesDifusao[i],out,resposta,&n,NULL);
+			}
+			
+			_tprintf(_T("Shutdown Servidor...\n"));
+			Sleep(1500);
+			exit(EXIT_SUCCESS);
 		}
 
 		//retorna no pipe de comunicaçao o numero de bytes recebidos
