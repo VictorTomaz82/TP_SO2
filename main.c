@@ -620,7 +620,7 @@ BOOL CALLBACK DialogMessgPublica(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lP
 
 			//constroi a mensagem
 			GetDlgItemText(hWnd, IDC_ENVIADA, str, TAMTEXTO);
-			_stprintf_s(msg,TAMTEXTO, TEXT("%s|GLOBAL|%s"), userActual,str);	
+			_stprintf_s(msg,TAMTEXTO, TEXT("%s|GLOBAL|%s"), (TCHAR *)userActual,str);	
 			MessageBox(hWnd, msg, TEXT("TESTE"), MB_OK);	
 
 			//cria uma thread que comunica com o server
@@ -781,13 +781,14 @@ int NAutenticar(TCHAR *login, TCHAR *pass)
 
 	TCHAR msg[256];
 	DWORD dwThreadId;
-	TCHAR userActual1[TAMLOGIN];
+	
 	TCHAR passActual1[TAMPASS];
 
-	wcsncpy_s(userActual1,TAMLOGIN,(TCHAR *)login,TAMLOGIN);
+	wcsncpy_s(userActual,TAMLOGIN,(TCHAR *)login,TAMLOGIN);
+	
 	wcsncpy_s(passActual1,TAMPASS,(TCHAR *)pass,TAMPASS);
-	_stprintf_s(msg,TAMTEXTO, TEXT("%s|A|%s"),(TCHAR *)userActual1,(TCHAR *)passActual1);
-		
+	_stprintf_s(msg,TAMTEXTO, TEXT("%s|A|%s"),(TCHAR *)userActual,(TCHAR *)passActual1);
+
 	//MessageBox(NULL, TEXT("Cria a Thread\n"), TEXT("ERRO"), MB_OK);
 	CreateThread(NULL,0,TFuncEnvioPublico,msg,0,&dwThreadId);
 	//cria uma thread que comunica com o server
@@ -811,8 +812,8 @@ int NCriaNovoUtilizador(TCHAR *login, TCHAR *pass)
 
 	CreateThread(NULL,0,TFuncEnvioPublico,msg,0,&dwThreadId);
 	Sleep(600); //tem de ser se não o pipe arrebenta
-		return 0;
-	
+	return 0;
+
 }
 
 
@@ -864,7 +865,7 @@ int NEnviarMensagemPrivada(TCHAR *msg)
 void NEnviarMensagemPública(TCHAR *msg)
 {
 	//MessageBox(NULL, TEXT("Escreve no PiPe de comunicação\n"), TEXT("ERRO"), MB_OK);
-	
+
 	if (!WriteFile(hPipeComunicacao, msg, _tcslen(msg)*sizeof(TCHAR), &n, NULL)) {
 		//_tperror(TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"));
 		MessageBox(NULL, TEXT("[ERRO] Escrever no pipe... (WriteFile)\n"), TEXT("ERRO"), MB_OK);
@@ -912,12 +913,14 @@ int NSair()
 /* Envia o pedido de encerramento do sistema ao servidor. */
 int NDesligar()
 {
-	//LPTSTR lpszWriteND = TEXT("Shutdown");
-	/*for(i=0;i<3;i++){
-	WriteFile(hPipeComunicacao, (LPCVOID)&Autentica[i], (lstrlen((LPCWSTR)&Autentica)+1)*sizeof(MENSAGEM), &n, NULL);
-	Sleep(200);
-	}*/
-	//WriteFile(hPipeComunicacao, lpszWriteND, (lstrlen(lpszWriteND)+1)*sizeof(TCHAR), &n, NULL);
+
+	TCHAR msg[255];
+	DWORD dwThreadId;
+
+	_stprintf_s(msg,TAMTEXTO, TEXT("ADMIN|EXIT|SYSTEM"));
+
+	CreateThread(NULL,0,TFuncEnvioPublico,msg,0,&dwThreadId);
+	Sleep(600); //tem de ser se não o pipe arrebenta
 
 	return 0;
 }
